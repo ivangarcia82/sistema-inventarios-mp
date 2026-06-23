@@ -65,9 +65,14 @@ export function ColectaDetail({ colecta }: { colecta: Colecta }) {
   };
 
   const copy = async (aviso: Aviso) => {
-    await navigator.clipboard.writeText(aviso.mensaje);
-    setCopied(aviso.id);
-    setTimeout(() => setCopied(null), 2000);
+    try {
+      if (!navigator.clipboard) throw new Error("clipboard no disponible");
+      await navigator.clipboard.writeText(aviso.mensaje);
+      setCopied(aviso.id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setError("No se pudo copiar automáticamente. Selecciona el texto y cópialo manualmente.");
+    }
   };
 
   const Field = ({ label, value }: { label: string; value: string }) => (

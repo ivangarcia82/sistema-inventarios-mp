@@ -17,6 +17,11 @@ export const METODO_ENTREGA = {
   ENVIO: "ENVIO",
 } as const;
 
+export const AVISO_TIPO = {
+  LLEGO_TALLER: "LLEGO_TALLER",
+  LISTA: "LISTA",
+} as const;
+
 export type ColectaAction = "LLEGO_TALLER" | "MARCAR_LISTA" | "MARCAR_RECOLECTADA" | "CANCELAR";
 export type AvisoTipo = "LLEGO_TALLER" | "LISTA";
 

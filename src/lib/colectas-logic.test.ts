@@ -50,6 +50,9 @@ describe("validateTransition", () => {
   it("rechaza cancelar una colecta ya recolectada", () => {
     expect(validateTransition("RECOLECTADA", "CANCELAR").ok).toBe(false);
   });
+  it("rechaza cancelar una colecta ya cancelada", () => {
+    expect(validateTransition("CANCELADA", "CANCELAR").ok).toBe(false);
+  });
 });
 
 describe("getCountdownState", () => {
@@ -62,6 +65,10 @@ describe("getCountdownState", () => {
   });
   it("ámbar cuando faltan 24h o menos", () => {
     const now = new Date("2026-06-24T12:00:00.000Z").getTime();
+    expect(getCountdownState(deadline, now).level).toBe("amber");
+  });
+  it("ámbar exacto en el límite de 24h", () => {
+    const now = new Date("2026-06-24T10:00:00.000Z").getTime();
     expect(getCountdownState(deadline, now).level).toBe("amber");
   });
   it("rojo y expired cuando ya pasó", () => {

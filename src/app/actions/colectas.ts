@@ -166,12 +166,20 @@ export async function transitionColecta(id: string, action: ColectaAction) {
     return { success: false as const, error: "No autorizado" };
   }
 
+  // Validación temprana sobre la copia externa para devolver un error amigable
+  // antes de abrir la transacción. La validación autoritativa ocurre adentro.
   const check = validateTransition(colecta.status, action);
   if (!check.ok) return { success: false as const, error: check.error };
-  const next = check.next;
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const next = await prisma.$transaction(async (tx) => {
+      // Re-leer y re-validar DENTRO de la transacción para evitar TOCTOU:
+      // el estado y los items pueden haber cambiado desde la lectura externa.
+      const fresh = await tx.colecta.findUnique({ where: { id }, include: { items: true } });
+      if (!fresh) throw new Error("Colecta no encontrada");
+      const recheck = validateTransition(fresh.status, action);
+      if (!recheck.ok) throw new Error(recheck.error);
+      const next = recheck.next;
       const data: any = { status: next };
 
       if (action === "LLEGO_TALLER") {
@@ -184,13 +192,13 @@ export async function transitionColecta(id: string, action: ColectaAction) {
       }
       if (action === "MARCAR_RECOLECTADA") {
         data.collectedAt = new Date();
-        if (!colecta.warehouseId) {
+        if (!fresh.warehouseId) {
           throw new Error("La colecta no tiene almacén asignado");
         }
         // Descontar inventario y registrar una Salida por cada item (patrón POS).
-        for (const item of colecta.items) {
+        for (const item of fresh.items) {
           const inv = await tx.inventoryItem.findUnique({
-            where: { productId_warehouseId: { productId: item.productId, warehouseId: colecta.warehouseId } },
+            where: { productId_warehouseId: { productId: item.productId, warehouseId: fresh.warehouseId } },
             include: { product: { select: { name: true, unit: true } } },
           });
           const currentQty = inv?.quantity ?? 0;
@@ -200,18 +208,18 @@ export async function transitionColecta(id: string, action: ColectaAction) {
             );
           }
           await tx.inventoryItem.update({
-            where: { productId_warehouseId: { productId: item.productId, warehouseId: colecta.warehouseId } },
+            where: { productId_warehouseId: { productId: item.productId, warehouseId: fresh.warehouseId } },
             data: { quantity: { decrement: item.quantity } },
           });
           await tx.stockMovement.create({
             data: {
               type: "EXIT",
               productId: item.productId,
-              fromWarehouseId: colecta.warehouseId,
+              fromWarehouseId: fresh.warehouseId,
               toWarehouseId: null,
               quantity: item.quantity,
-              reason: `Recolección ${colecta.folio}`,
-              receiverName: colecta.clienteNombre ?? null,
+              reason: `Recolección ${fresh.folio}`,
+              receiverName: fresh.clienteNombre ?? null,
               createdById: ctx.userId,
             },
           });
@@ -224,14 +232,16 @@ export async function transitionColecta(id: string, action: ColectaAction) {
       if (action === "LLEGO_TALLER" || action === "MARCAR_LISTA") {
         const tipo = action === "LLEGO_TALLER" ? "LLEGO_TALLER" : "LISTA";
         const mensaje = buildAvisoMessage(tipo, {
-          clienteNombre: colecta.clienteNombre,
-          numeroColecta: colecta.numeroColecta,
-          folio: colecta.folio,
+          clienteNombre: fresh.clienteNombre,
+          numeroColecta: fresh.numeroColecta,
+          folio: fresh.folio,
         });
         await tx.colectaAviso.create({
           data: { colectaId: id, tipo, mensaje, createdById: ctx.userId },
         });
       }
+
+      return next;
     });
 
     revalidatePath("/colectas");

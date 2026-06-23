@@ -11,7 +11,7 @@ const movementTypeConfig: Record<string, { label: string; color: string }> = {
   ENTRY:    { label: "Entrada",       color: "bg-emerald-100 text-emerald-700" },
   EXIT:     { label: "Salida",        color: "bg-red-100 text-red-700" },
   TRANSFER: { label: "Transferencia", color: "bg-primary/10 text-primary" },
-  RETURN:   { label: "Devolución",    color: "bg-amber-100 text-amber-700" },
+  RETURN:   { label: "Retiro",        color: "bg-amber-100 text-amber-700" },
 };
 
 export default async function DashboardPage() {
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   const allMovements = movementsRes.success ? movementsRes.data : [];
 
   const chartData = ["ENTRY", "EXIT", "TRANSFER", "RETURN"].map((type) => ({
-    name: { ENTRY: "Entradas", EXIT: "Salidas", TRANSFER: "Transfer.", RETURN: "Devoluciones" }[type] ?? type,
+    name: { ENTRY: "Entradas", EXIT: "Salidas", TRANSFER: "Transfer.", RETURN: "Retiros" }[type] ?? type,
     cantidad: allMovements.filter((m) => m.type === type).length,
   }));
 

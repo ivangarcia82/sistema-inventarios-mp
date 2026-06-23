@@ -22,7 +22,7 @@ const typeConfig: Record<MovementType, { label: string; needsFrom: boolean; need
   ENTRY:    { label: "Entrada",       needsFrom: false, needsTo: true,  activeCls: "bg-emerald-600 text-white border-emerald-600" },
   EXIT:     { label: "Salida",        needsFrom: true,  needsTo: false, activeCls: "bg-red-600 text-white border-red-600" },
   TRANSFER: { label: "Transferencia", needsFrom: true,  needsTo: true,  activeCls: "bg-primary text-white border-primary" },
-  RETURN:   { label: "Devolución",    needsFrom: false, needsTo: true,  activeCls: "bg-amber-500 text-white border-amber-500" },
+  RETURN:   { label: "Retiro",         needsFrom: false, needsTo: true,  activeCls: "bg-amber-500 text-white border-amber-500" },
 };
 
 const submitColor: Record<MovementType, string> = {

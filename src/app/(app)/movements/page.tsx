@@ -30,7 +30,7 @@ const typeConfig: Record<string, { label: string; icon: React.ElementType; badge
   ENTRY:    { label: "Entrada",       icon: ArrowDown,      badge: "bg-emerald-100 text-emerald-700" },
   EXIT:     { label: "Salida",        icon: ArrowUp,        badge: "bg-red-100 text-red-700" },
   TRANSFER: { label: "Transferencia", icon: ArrowLeftRight, badge: "bg-primary/10 text-primary" },
-  RETURN:   { label: "Devolución",    icon: RotateCcw,      badge: "bg-amber-100 text-amber-700" },
+  RETURN:   { label: "Retiro",        icon: RotateCcw,      badge: "bg-amber-100 text-amber-700" },
 };
 
 const TYPE_FILTERS = [
@@ -38,7 +38,7 @@ const TYPE_FILTERS = [
   { value: "ENTRY",    label: "Entradas" },
   { value: "EXIT",     label: "Salidas" },
   { value: "TRANSFER", label: "Transferencias" },
-  { value: "RETURN",   label: "Devoluciones" },
+  { value: "RETURN",   label: "Retiros" },
 ];
 
 export default function MovementsPage() {

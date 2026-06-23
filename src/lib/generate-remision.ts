@@ -9,7 +9,7 @@ const TYPE_LABELS: Record<string, string> = {
   ENTRY:    "Entrada",
   EXIT:     "Salida",
   TRANSFER: "Transferencia",
-  RETURN:   "Devolución",
+  RETURN:   "Retiro",
 };
 
 export interface RemisionItem {

@@ -107,35 +107,23 @@ git commit -m "refactor: renombrar Devoluciones a Retiros en la UI"
 
 ---
 
-### Task 2: Migración del precio de producto (valor monetario)
+### Task 2: Valor monetario — verificación (sin cambios)
 
-El campo `Product.price` ya está en el schema (sin migrar). Esta task lo migra para que el "Valor inventario" funcione contra la base de datos.
+**Decisión de infraestructura (2026-06-23):** la BD de desarrollo se administra con `prisma db push`, no con migraciones. La columna `Product.price` **ya existe** en la BD y en el schema (incluida en el commit base de valor monetario). Por lo tanto no hay migración que correr ni archivo que cambiar: esta task es solo verificación.
 
-**Files:**
-- Migrate: `prisma/schema.prisma` (ya contiene `price Decimal? @db.Decimal(10, 2)`; sin cambios de archivo)
-- Create: `prisma/migrations/<timestamp>_add_product_price/migration.sql` (lo genera Prisma)
+**Files:** ninguno (no hay cambios de código ni commit).
 
-- [ ] **Step 1: Confirmar el diff pendiente**
+- [ ] **Step 1: Confirmar que la columna price existe en la BD**
 
-Run: `git diff prisma/schema.prisma`
-Expected: muestra únicamente la adición de `price Decimal? @db.Decimal(10, 2)` en `Product`.
+Run: `npx prisma db pull --print | grep -i "price"` (o introspección equivalente)
+Expected: aparece `price Decimal? @db.Decimal(10, 2)` en `Product`.
 
-- [ ] **Step 2: Crear y aplicar la migración**
-
-Run: `npx prisma migrate dev --name add_product_price`
-Expected: crea la carpeta de migración, aplica la columna `price` y regenera el cliente. Termina con "Your database is now in sync with your schema."
-
-- [ ] **Step 3: Verificar typecheck/build de prisma**
+- [ ] **Step 2: Verificar que el cliente Prisma está generado**
 
 Run: `npx prisma generate`
 Expected: "Generated Prisma Client" sin errores.
 
-- [ ] **Step 4: Commit**
-
-```bash
-git add prisma/schema.prisma prisma/migrations
-git commit -m "feat: migrar columna price de Product (valor monetario)"
-```
+Sin commit (nada que cambiar).
 
 ---
 
@@ -421,7 +409,8 @@ git commit -m "feat: lógica pura de colectas (estados, 48h, avisos) + vitest"
 
 **Files:**
 - Modify: `prisma/schema.prisma`
-- Create: `prisma/migrations/<timestamp>_add_colectas/migration.sql` (lo genera Prisma)
+
+**Nota de infraestructura:** la BD de desarrollo usa `prisma db push` (no migraciones). Esta task aplica el schema con `db push`, que **agrega las tablas nuevas sin tocar ni borrar** las tablas/datos existentes.
 
 - [ ] **Step 1: Agregar relaciones inversas en modelos existentes**
 
@@ -505,10 +494,10 @@ model ColectaAviso {
 }
 ```
 
-- [ ] **Step 3: Crear y aplicar la migración**
+- [ ] **Step 3: Aplicar el schema con db push (no destructivo)**
 
-Run: `npx prisma migrate dev --name add_colectas`
-Expected: crea las tablas `Colecta`, `ColectaItem`, `ColectaAviso`; regenera el cliente; "Your database is now in sync with your schema."
+Run: `npx prisma db push`
+Expected: crea las tablas `Colecta`, `ColectaItem`, `ColectaAviso` y regenera el cliente; "Your database is now in sync with your Prisma schema." NO debe reportar pérdida de datos ni pedir reset (solo agrega tablas). Si Prisma advierte sobre pérdida de datos o reset, DETENER y reportar BLOCKED (no continuar).
 
 - [ ] **Step 4: Verificar tipos del cliente Prisma**
 
@@ -518,8 +507,8 @@ Expected: sin errores (los modelos nuevos existen en el cliente).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add prisma/schema.prisma prisma/migrations
-git commit -m "feat: modelos Colecta, ColectaItem, ColectaAviso"
+git add prisma/schema.prisma
+git commit -m "feat: modelos Colecta, ColectaItem, ColectaAviso (db push)"
 ```
 
 ---

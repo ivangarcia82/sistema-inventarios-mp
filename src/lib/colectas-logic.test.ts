@@ -8,6 +8,8 @@ import {
   buildAvisoMessage,
   STATUS_LABELS,
   METODO_LABELS,
+  nextActionFor,
+  canCancel,
 } from "./colectas-logic";
 
 describe("nextFolio", () => {
@@ -99,5 +101,25 @@ describe("etiquetas", () => {
     expect(STATUS_LABELS.EN_PREPARACION).toBe("En preparación");
     expect(METODO_LABELS.RECOLECCION).toBe("Recolección");
     expect(METODO_LABELS.ENVIO).toBe("Envío");
+  });
+});
+
+describe("nextActionFor", () => {
+  it("mapea cada estado a su acción de avance", () => {
+    expect(nextActionFor("CREADA")).toBe("LLEGO_TALLER");
+    expect(nextActionFor("EN_PREPARACION")).toBe("MARCAR_LISTA");
+    expect(nextActionFor("LISTA")).toBe("MARCAR_RECOLECTADA");
+    expect(nextActionFor("RECOLECTADA")).toBeNull();
+    expect(nextActionFor("CANCELADA")).toBeNull();
+  });
+});
+
+describe("canCancel", () => {
+  it("permite cancelar solo en estados no terminales", () => {
+    expect(canCancel("CREADA")).toBe(true);
+    expect(canCancel("EN_PREPARACION")).toBe(true);
+    expect(canCancel("LISTA")).toBe(true);
+    expect(canCancel("RECOLECTADA")).toBe(false);
+    expect(canCancel("CANCELADA")).toBe(false);
   });
 });

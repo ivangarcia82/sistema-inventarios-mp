@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { transitionColecta } from "@/app/actions/colectas";
-import { STATUS_LABELS, STATUS_BADGE, METODO_LABELS, type ColectaStatus, type ColectaAction } from "@/lib/colectas-logic";
+import { STATUS_LABELS, STATUS_BADGE, METODO_LABELS, nextActionFor, canCancel, type ColectaStatus, type ColectaAction } from "@/lib/colectas-logic";
 import { Countdown } from "@/components/colectas/countdown";
 import { Loader2, Copy, Check, PackageCheck, Bell } from "lucide-react";
 
@@ -37,14 +37,6 @@ const ACTION_LABEL: Record<ColectaAction, string> = {
   CANCELAR: "Cancelar colecta",
 };
 
-const NEXT_ACTION: Record<string, ColectaAction | null> = {
-  CREADA: "LLEGO_TALLER",
-  EN_PREPARACION: "MARCAR_LISTA",
-  LISTA: "MARCAR_RECOLECTADA",
-  RECOLECTADA: null,
-  CANCELADA: null,
-};
-
 export function ColectaDetail({ colecta }: { colecta: Colecta }) {
   const router = useRouter();
   const [loading, setLoading] = useState<ColectaAction | null>(null);
@@ -52,8 +44,8 @@ export function ColectaDetail({ colecta }: { colecta: Colecta }) {
   const [copied, setCopied] = useState<string | null>(null);
 
   const status = colecta.status as ColectaStatus;
-  const nextAction = NEXT_ACTION[colecta.status] ?? null;
-  const canCancel = ["CREADA", "EN_PREPARACION", "LISTA"].includes(colecta.status);
+  const nextAction = nextActionFor(colecta.status);
+  const canCancelColecta = canCancel(colecta.status);
 
   const run = async (action: ColectaAction) => {
     setError("");
@@ -111,7 +103,7 @@ export function ColectaDetail({ colecta }: { colecta: Colecta }) {
               {ACTION_LABEL[nextAction]}
             </button>
           )}
-          {canCancel && (
+          {canCancelColecta && (
             <button
               onClick={() => run("CANCELAR")}
               disabled={loading !== null}

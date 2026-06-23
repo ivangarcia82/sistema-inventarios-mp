@@ -75,6 +75,18 @@ export function validateTransition(
   return { ok: true, next: t.next };
 }
 
+export function nextActionFor(status: string): ColectaAction | null {
+  const forward: ColectaAction[] = ["LLEGO_TALLER", "MARCAR_LISTA", "MARCAR_RECOLECTADA"];
+  for (const action of forward) {
+    if (TRANSITIONS[action].from.includes(status as ColectaStatus)) return action;
+  }
+  return null;
+}
+
+export function canCancel(status: string): boolean {
+  return TRANSITIONS.CANCELAR.from.includes(status as ColectaStatus);
+}
+
 export function getCountdownState(
   deadlineISO: string,
   nowMs: number

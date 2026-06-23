@@ -16,7 +16,7 @@ interface Props {
   data: { name: string; cantidad: number }[];
 }
 
-const BAR_COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444"];
+const BAR_COLORS = ["#00B1EA", "#2D3277", "#FFE600", "#EF4444"];
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;

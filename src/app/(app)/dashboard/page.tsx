@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getInventorySummary } from "@/app/actions/inventory";
 import { getMovements } from "@/app/actions/movements";
 import { DashboardChart } from "@/components/dashboard-chart";
-import { Package, ArrowLeftRight, AlertTriangle, TrendingUp, ArrowDown, ArrowUp, RotateCcw } from "lucide-react";
+import { Package, ArrowLeftRight, AlertTriangle, TrendingUp, ArrowDown, ArrowUp, RotateCcw, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
 
   const summary = summaryRes.success
     ? summaryRes.data
-    : { totalProducts: 0, totalStock: 0, lowStockCount: 0 };
+    : { totalProducts: 0, totalStock: 0, lowStockCount: 0, totalValue: 0 };
   const recentMovements = movementsRes.success ? movementsRes.data.slice(0, 6) : [];
   const allMovements = movementsRes.success ? movementsRes.data : [];
 
@@ -40,31 +40,41 @@ export default async function DashboardPage() {
     cantidad: allMovements.filter((m) => m.type === type).length,
   }));
 
+  const formatCurrency = (n: number) =>
+    n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
+
   const stats = [
     {
       label: "Productos",
-      value: summary.totalProducts,
+      value: summary.totalProducts.toLocaleString(),
       icon: Package,
       accent: "border-t-primary",
       iconColor: "text-primary",
     },
     {
       label: "Unidades en stock",
-      value: summary.totalStock,
+      value: summary.totalStock.toLocaleString(),
       icon: TrendingUp,
       accent: "border-t-emerald-500",
       iconColor: "text-emerald-500",
     },
     {
+      label: "Valor inventario",
+      value: formatCurrency(summary.totalValue ?? 0),
+      icon: DollarSign,
+      accent: "border-t-amber-500",
+      iconColor: "text-amber-500",
+    },
+    {
       label: "Stock bajo (≤5)",
-      value: summary.lowStockCount,
+      value: summary.lowStockCount.toLocaleString(),
       icon: AlertTriangle,
       accent: summary.lowStockCount > 0 ? "border-t-red-500" : "border-t-slate-300",
       iconColor: summary.lowStockCount > 0 ? "text-red-500" : "text-slate-400",
     },
     {
       label: "Movimientos",
-      value: allMovements.length,
+      value: allMovements.length.toLocaleString(),
       icon: ArrowLeftRight,
       accent: "border-t-violet-500",
       iconColor: "text-violet-500",
@@ -84,7 +94,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
@@ -94,7 +104,7 @@ export default async function DashboardPage() {
             >
               <Icon className={`w-4 h-4 mb-3 ${s.iconColor}`} />
               <p className="text-2xl font-bold text-slate-900 tabular-nums leading-none">
-                {s.value.toLocaleString()}
+                {s.value}
               </p>
               <p className="text-xs text-slate-500 mt-1.5 font-medium">{s.label}</p>
             </div>

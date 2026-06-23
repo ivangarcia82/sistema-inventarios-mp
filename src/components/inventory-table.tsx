@@ -8,10 +8,13 @@ import { AlertTriangle, Search, Inbox } from "lucide-react";
 type InventoryItem = {
   id: string;
   quantity: number;
-  product: { id: string; name: string; sku: string | null; unit: string };
+  product: { id: string; name: string; sku: string | null; unit: string; price: number | null };
   warehouse: { id: string; name: string };
 };
 type Org = { id: string; name: string };
+
+const currency = (n: number) =>
+  n.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 
 interface Props {
   initialItems: InventoryItem[];
@@ -36,6 +39,11 @@ export function InventoryTable({ initialItems, orgs, userRole, defaultOrgId }: P
       i.product.name.toLowerCase().includes(search.toLowerCase()) ||
       (i.product.sku ?? "").toLowerCase().includes(search.toLowerCase()) ||
       i.warehouse.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalValue = filtered.reduce(
+    (sum, i) => sum + i.quantity * (i.product.price ?? 0),
+    0
   );
 
   return (
@@ -72,6 +80,8 @@ export function InventoryTable({ initialItems, orgs, userRole, defaultOrgId }: P
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">SKU</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Almacén</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Stock</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valor</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -95,11 +105,21 @@ export function InventoryTable({ initialItems, orgs, userRole, defaultOrgId }: P
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-right tabular-nums text-slate-600">
+                  {item.product.price != null
+                    ? currency(item.product.price)
+                    : <span className="text-slate-300">—</span>}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-800">
+                  {item.product.price != null
+                    ? currency(item.quantity * item.product.price)
+                    : <span className="text-slate-300 font-normal">—</span>}
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center">
+                <td colSpan={6} className="px-4 py-12 text-center">
                   <Inbox className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                   <p className="text-sm text-slate-400">
                     {items.length === 0 ? "Sin inventario registrado" : "Sin resultados para la búsqueda"}
@@ -108,6 +128,19 @@ export function InventoryTable({ initialItems, orgs, userRole, defaultOrgId }: P
               </tr>
             )}
           </tbody>
+          {filtered.length > 0 && (
+            <tfoot>
+              <tr className="border-t border-slate-200 bg-slate-50/50">
+                <td colSpan={4} className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Valor total
+                </td>
+                <td className="px-4 py-3" />
+                <td className="px-4 py-3 text-right tabular-nums font-bold text-slate-900">
+                  {currency(totalValue)}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>

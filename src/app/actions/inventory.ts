@@ -19,13 +19,18 @@ export async function getInventory(organizationId?: string) {
   const items = await prisma.inventoryItem.findMany({
     where: { product: { organizationId: targetOrgId } },
     include: {
-      product: { select: { id: true, name: true, sku: true, unit: true } },
+      product: { select: { id: true, name: true, sku: true, unit: true, price: true } },
       warehouse: { select: { id: true, name: true } },
     },
     orderBy: [{ product: { name: "asc" } }, { warehouse: { name: "asc" } }],
   });
 
-  return { success: true as const, data: items };
+  const serialized = items.map((i) => ({
+    ...i,
+    product: { ...i.product, price: i.product.price != null ? Number(i.product.price) : null },
+  }));
+
+  return { success: true as const, data: serialized };
 }
 
 export async function getInventorySummary(organizationId?: string) {
@@ -46,7 +51,7 @@ export async function getInventorySummary(organizationId?: string) {
   const orgFilter = targetOrgId ? { organizationId: targetOrgId } : {};
   const productOrgFilter = targetOrgId ? { product: { organizationId: targetOrgId } } : {};
 
-  const [totalProducts, totalStock, lowStockCount] = await Promise.all([
+  const [totalProducts, totalStock, lowStockCount, valueRows] = await Promise.all([
     prisma.product.count({ where: orgFilter }),
     prisma.inventoryItem.aggregate({
       where: productOrgFilter,
@@ -55,7 +60,16 @@ export async function getInventorySummary(organizationId?: string) {
     prisma.inventoryItem.count({
       where: { ...productOrgFilter, quantity: { lte: 5 } },
     }),
+    prisma.inventoryItem.findMany({
+      where: productOrgFilter,
+      select: { quantity: true, product: { select: { price: true } } },
+    }),
   ]);
+
+  const totalValue = valueRows.reduce(
+    (sum, r) => sum + r.quantity * (r.product.price != null ? Number(r.product.price) : 0),
+    0
+  );
 
   return {
     success: true as const,
@@ -63,6 +77,7 @@ export async function getInventorySummary(organizationId?: string) {
       totalProducts,
       totalStock: totalStock._sum.quantity ?? 0,
       lowStockCount,
+      totalValue,
     },
   };
 }
@@ -74,10 +89,15 @@ export async function getWarehouseInventory(warehouseId: string) {
   const items = await prisma.inventoryItem.findMany({
     where: { warehouseId, quantity: { gt: 0 } },
     include: {
-      product: { select: { id: true, name: true, sku: true, unit: true } },
+      product: { select: { id: true, name: true, sku: true, unit: true, price: true } },
     },
     orderBy: { product: { name: "asc" } },
   });
 
-  return { success: true as const, data: items };
+  const serialized = items.map((i) => ({
+    ...i,
+    product: { ...i.product, price: i.product.price != null ? Number(i.product.price) : null },
+  }));
+
+  return { success: true as const, data: serialized };
 }

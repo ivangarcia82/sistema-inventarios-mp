@@ -4,12 +4,14 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 const prismaClientSingleton = () => {
+  const url = process.env.DATABASE_URL ?? "";
+  const isLocal = /localhost|127\.0\.0\.1/.test(url);
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: url,
     max: 2,
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
-    ssl: { rejectUnauthorized: false },
+    ssl: isLocal ? false : { rejectUnauthorized: false },
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter } as any);

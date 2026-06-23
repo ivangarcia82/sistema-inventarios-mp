@@ -17,11 +17,13 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ChevronRight,
+  Truck,
 } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard",           href: "/dashboard",      icon: LayoutDashboard },
   { label: "POS — Salidas",       href: "/pos",            icon: ShoppingCart },
+  { label: "Colectas",            href: "/colectas",       icon: Truck },
   { label: "Inventario",          href: "/inventory",      icon: Package },
   { label: "Movimientos",         href: "/movements",      icon: ClipboardList },
   { label: "Nuevo movimiento",    href: "/movements/new",  icon: PackagePlus },

@@ -4,7 +4,13 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { nextFolio } from "@/lib/colectas-logic";
+import {
+  nextFolio,
+  validateTransition,
+  computeDeadline,
+  buildAvisoMessage,
+  type ColectaAction,
+} from "@/lib/colectas-logic";
 
 export interface CreateColectaInput {
   ordenCompra?: string;
@@ -145,4 +151,95 @@ export async function getOrdenesColectas() {
   });
 
   return { success: true as const, data: rows };
+}
+
+export async function transitionColecta(id: string, action: ColectaAction) {
+  const ctx = await getSessionCtx();
+  if (!ctx) return { success: false as const, error: "No autorizado" };
+
+  const colecta = await prisma.colecta.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+  if (!colecta) return { success: false as const, error: "Colecta no encontrada" };
+  if (ctx.userRole !== "ADMIN_GI" && colecta.organizationId !== ctx.userOrgId) {
+    return { success: false as const, error: "No autorizado" };
+  }
+
+  const check = validateTransition(colecta.status, action);
+  if (!check.ok) return { success: false as const, error: check.error };
+  const next = check.next;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const data: any = { status: next };
+
+      if (action === "LLEGO_TALLER") {
+        const arrivedAt = new Date();
+        data.tallerArrivedAt = arrivedAt;
+        data.prepDeadlineAt = computeDeadline(arrivedAt);
+      }
+      if (action === "MARCAR_LISTA") {
+        data.readyAt = new Date();
+      }
+      if (action === "MARCAR_RECOLECTADA") {
+        data.collectedAt = new Date();
+        if (!colecta.warehouseId) {
+          throw new Error("La colecta no tiene almacén asignado");
+        }
+        // Descontar inventario y registrar una Salida por cada item (patrón POS).
+        for (const item of colecta.items) {
+          const inv = await tx.inventoryItem.findUnique({
+            where: { productId_warehouseId: { productId: item.productId, warehouseId: colecta.warehouseId } },
+            include: { product: { select: { name: true, unit: true } } },
+          });
+          const currentQty = inv?.quantity ?? 0;
+          if (currentQty < item.quantity) {
+            throw new Error(
+              `Stock insuficiente para "${inv?.product?.name ?? item.productId}": hay ${currentQty} ${inv?.product?.unit ?? "uds"}`
+            );
+          }
+          await tx.inventoryItem.update({
+            where: { productId_warehouseId: { productId: item.productId, warehouseId: colecta.warehouseId } },
+            data: { quantity: { decrement: item.quantity } },
+          });
+          await tx.stockMovement.create({
+            data: {
+              type: "EXIT",
+              productId: item.productId,
+              fromWarehouseId: colecta.warehouseId,
+              toWarehouseId: null,
+              quantity: item.quantity,
+              reason: `Recolección ${colecta.folio}`,
+              receiverName: colecta.clienteNombre ?? null,
+              createdById: ctx.userId,
+            },
+          });
+        }
+      }
+
+      await tx.colecta.update({ where: { id }, data });
+
+      // Avisos in-system para llegada de taller y para "lista".
+      if (action === "LLEGO_TALLER" || action === "MARCAR_LISTA") {
+        const tipo = action === "LLEGO_TALLER" ? "LLEGO_TALLER" : "LISTA";
+        const mensaje = buildAvisoMessage(tipo, {
+          clienteNombre: colecta.clienteNombre,
+          numeroColecta: colecta.numeroColecta,
+          folio: colecta.folio,
+        });
+        await tx.colectaAviso.create({
+          data: { colectaId: id, tipo, mensaje, createdById: ctx.userId },
+        });
+      }
+    });
+
+    revalidatePath("/colectas");
+    revalidatePath(`/colectas/${id}`);
+    revalidatePath("/inventory");
+    revalidatePath("/dashboard");
+    return { success: true as const, data: { status: next } };
+  } catch (e: any) {
+    return { success: false as const, error: e.message ?? "Error al actualizar la colecta" };
+  }
 }

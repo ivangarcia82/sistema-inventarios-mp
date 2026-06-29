@@ -1,0 +1,209 @@
+{
+  "user": {
+    "name": "Karla del Río",
+    "email": "karla@mercadopago.com",
+    "password": "karla123",
+    "role": "USER_MP"
+  },
+  "organizationSlug": "mercado-pago",
+  "sheets": [
+    {
+      "retiro": "6552487",
+      "warehouse": "Almacén FULL 1",
+      "clienteNombre": "Brian",
+      "status": "RECOLECTADA",
+      "rows": [
+        {
+          "producto": "Kit Señalización Profesional Para Tienda Autorizada Amarillo",
+          "sku": "4185624562",
+          "piezas": 21,
+          "totalEntregado": 17,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Pack De 4 Cordones  Representante",
+          "sku": "3334304802",
+          "piezas": 27,
+          "totalEntregado": 18,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Pack De Manuales  Cliente Representantes",
+          "sku": "3053828944",
+          "piezas": 316,
+          "totalEntregado": 316,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Hombre | M",
+          "sku": null,
+          "piezas": 131,
+          "totalEntregado": 131,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Hombre | XL",
+          "sku": "4124313398",
+          "piezas": 118,
+          "totalEntregado": 73,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Mujer | G",
+          "sku": "4124198104",
+          "piezas": 141,
+          "totalEntregado": 135,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Mujer | XL",
+          "sku": "4124198104",
+          "piezas": 35,
+          "totalEntregado": 33,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Rompevientos Representantes Mercado Pago | L",
+          "sku": "2353856155",
+          "piezas": 46,
+          "totalEntregado": 47,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Rompevientos Representantes Mercado Pago | S",
+          "sku": "2353856155",
+          "piezas": 17,
+          "totalEntregado": 14,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Rompevientos Representantes Mercado Pago | XL",
+          "sku": "2353856155",
+          "piezas": 24,
+          "totalEntregado": 23,
+          "quienRecibe": "Brian"
+        }
+      ]
+    },
+    {
+      "retiro": "7226075",
+      "warehouse": "Almacén FULL 2",
+      "clienteNombre": "Brian",
+      "status": "RECOLECTADA",
+      "rows": [
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Hombre | G",
+          "sku": "1478754818",
+          "piezas": null,
+          "totalEntregado": 146,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Hombre | M",
+          "sku": "1478754818",
+          "piezas": null,
+          "totalEntregado": 1,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Hombre | S",
+          "sku": "1478754818",
+          "piezas": 237,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Hombre | XL",
+          "sku": "1478754818",
+          "piezas": null,
+          "totalEntregado": 33,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Mujer | G",
+          "sku": "4149715896",
+          "piezas": null,
+          "totalEntregado": 56,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Mujer | M",
+          "sku": "4149715896",
+          "piezas": null,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Mujer | S",
+          "sku": "4149715896",
+          "piezas": 156,
+          "totalEntregado": 11,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Kit Para Representantes De Mercado Pago - Mujer | XL",
+          "sku": "4149715896",
+          "piezas": null,
+          "totalEntregado": 7,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Hombre | G",
+          "sku": "4124313398",
+          "piezas": null,
+          "totalEntregado": 200,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Hombre | M",
+          "sku": "4124313398",
+          "piezas": null,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Hombre | S",
+          "sku": "4124313398",
+          "piezas": 212,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Hombre | XL",
+          "sku": "4124313398",
+          "piezas": null,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Mujer | G",
+          "sku": "4124198104",
+          "piezas": null,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Mujer | M",
+          "sku": "4124198104",
+          "piezas": null,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Mujer | S",
+          "sku": "4124198104",
+          "piezas": 44,
+          "totalEntregado": 0,
+          "quienRecibe": "Brian"
+        },
+        {
+          "producto": "Playera Dry-fit Representante Mercado Pago | Mujer | XL",
+          "sku": "4124198104",
+          "piezas": null,
+          "totalEntregado": 1,
+          "quienRecibe": "Brian"
+        }
+      ]
+    }
+  ]
+}

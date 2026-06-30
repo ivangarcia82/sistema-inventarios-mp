@@ -5,13 +5,11 @@ import { ColectasList } from "./colectas-list";
 
 export function ColectasView({
   title,
-  subtitle,
   colectas,
   newHref,
   newLabel,
 }: {
   title: string;
-  subtitle: string;
   colectas: unknown[];
   newHref: string;
   newLabel: string;
@@ -21,7 +19,6 @@ export function ColectasView({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <Link

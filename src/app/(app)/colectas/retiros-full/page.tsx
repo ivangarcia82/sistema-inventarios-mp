@@ -9,7 +9,6 @@ export default async function RetirosFullPage() {
   return (
     <ColectasView
       title="Retiros Full"
-      subtitle="Lo que Mercado Pago manda al almacén Álamos"
       colectas={colectas}
       newHref="/colectas/new?tipo=RETIRO_FULL"
       newLabel="Nuevo retiro"

@@ -9,7 +9,6 @@ export default async function ColectasPage() {
   return (
     <ColectasView
       title="Colectas"
-      subtitle="Lo que Mercado Pago recolecta del almacén Álamos"
       colectas={colectas}
       newHref="/colectas/new?tipo=COLECTA"
       newLabel="Nueva colecta"

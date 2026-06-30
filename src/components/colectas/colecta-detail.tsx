@@ -122,7 +122,7 @@ export function ColectaDetail({ colecta }: { colecta: Colecta }) {
         <Field label="# Orden de compra" value={colecta.ordenCompra ?? "—"} />
         <Field label="# Colecta MP/ML" value={colecta.numeroColecta ?? "—"} />
         <Field label="# Solicitud / Entrega" value={colecta.numeroSolicitud ?? "—"} />
-        <Field label="Método de entrega" value={METODO_LABELS[colecta.metodoEntrega] ?? colecta.metodoEntrega} />
+        <Field label="Tipo de colecta" value={METODO_LABELS[colecta.metodoEntrega] ?? colecta.metodoEntrega} />
         <Field label="Cliente / contacto" value={colecta.clienteNombre ?? "—"} />
         <Field label="Almacén" value={colecta.warehouse?.name ?? "—"} />
       </div>

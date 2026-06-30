@@ -99,8 +99,12 @@ describe("buildAvisoMessage", () => {
 describe("etiquetas", () => {
   it("STATUS_LABELS y METODO_LABELS están completas", () => {
     expect(STATUS_LABELS.EN_PREPARACION).toBe("En preparación");
-    expect(METODO_LABELS.RECOLECCION).toBe("Recolección");
+    expect(METODO_LABELS.RETIRO_FULL).toBe("Retiro Full");
+    expect(METODO_LABELS.COLECTA).toBe("Colecta");
     expect(METODO_LABELS.ENVIO).toBe("Envío");
+  });
+  it("mantiene alias legacy RECOLECCION -> Retiro Full", () => {
+    expect(METODO_LABELS.RECOLECCION).toBe("Retiro Full");
   });
 });
 

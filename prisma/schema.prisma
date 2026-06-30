@@ -109,7 +109,7 @@ model Colecta {
   ordenCompra     String?
   numeroColecta   String?
   numeroSolicitud String?
-  metodoEntrega   String   @default("RECOLECCION")
+  metodoEntrega   String   @default("RETIRO_FULL")
   status          String   @default("CREADA")
   clienteNombre   String?
 

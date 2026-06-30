@@ -149,7 +149,7 @@ async function main() {
             status: sheet.status,
             clienteNombre: sheet.clienteNombre,
             numeroColecta: sheet.retiro,
-            metodoEntrega: "RECOLECCION",
+            metodoEntrega: "RETIRO_FULL",
           },
         })
       : await prisma.colecta.create({
@@ -157,7 +157,7 @@ async function main() {
             folio: sheet.retiro,
             numeroColecta: sheet.retiro,
             status: sheet.status,
-            metodoEntrega: "RECOLECCION",
+            metodoEntrega: "RETIRO_FULL",
             clienteNombre: sheet.clienteNombre,
             organizationId: org.id,
             warehouseId,

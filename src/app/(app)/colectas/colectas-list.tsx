@@ -60,7 +60,7 @@ export function ColectasList({ colectas }: { colectas: Row[] }) {
             <tr className="border-b border-slate-200">
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Folio</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">OC / # Colecta</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Método</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tipo</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tiempo</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Fecha</th>

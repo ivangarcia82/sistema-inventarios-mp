@@ -18,7 +18,7 @@ export function ColectaForm({ products, warehouses }: { products: Product[]; war
   const [ordenCompra, setOrdenCompra] = useState("");
   const [numeroColecta, setNumeroColecta] = useState("");
   const [numeroSolicitud, setNumeroSolicitud] = useState("");
-  const [metodoEntrega, setMetodoEntrega] = useState("RECOLECCION");
+  const [metodoEntrega, setMetodoEntrega] = useState("RETIRO_FULL");
   const [clienteNombre, setClienteNombre] = useState("");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [lines, setLines] = useState<Line[]>([]);
@@ -82,9 +82,10 @@ export function ColectaForm({ products, warehouses }: { products: Product[]; war
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className={labelCls}>Método de entrega</label>
+          <label className={labelCls}>Tipo de colecta</label>
           <select value={metodoEntrega} onChange={(e) => setMetodoEntrega(e.target.value)} className={inputCls + " cursor-pointer"}>
-            <option value="RECOLECCION">Recolección</option>
+            <option value="RETIRO_FULL">Retiro Full</option>
+            <option value="COLECTA">Colecta</option>
             <option value="ENVIO">Envío</option>
           </select>
         </div>

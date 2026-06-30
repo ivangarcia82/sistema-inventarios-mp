@@ -16,7 +16,7 @@ export interface CreateColectaInput {
   ordenCompra?: string;
   numeroColecta?: string;
   numeroSolicitud?: string;
-  metodoEntrega: string; // "RECOLECCION" | "ENVIO"
+  metodoEntrega: string; // "RETIRO_FULL" | "COLECTA" | "ENVIO"
   clienteNombre?: string;
   warehouseId: string;
   items: { productId: string; quantity: number }[];
@@ -59,7 +59,9 @@ export async function createColecta(input: CreateColectaInput) {
           ordenCompra: input.ordenCompra?.trim() || null,
           numeroColecta: input.numeroColecta?.trim() || null,
           numeroSolicitud: input.numeroSolicitud?.trim() || null,
-          metodoEntrega: input.metodoEntrega === "ENVIO" ? "ENVIO" : "RECOLECCION",
+          metodoEntrega: ["RETIRO_FULL", "COLECTA", "ENVIO"].includes(input.metodoEntrega)
+            ? input.metodoEntrega
+            : "RETIRO_FULL",
           clienteNombre: input.clienteNombre?.trim() || null,
           status: "CREADA",
           organizationId,

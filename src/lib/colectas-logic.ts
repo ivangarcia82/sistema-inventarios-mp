@@ -13,7 +13,8 @@ export const COLECTA_STATUS = {
 export type ColectaStatus = keyof typeof COLECTA_STATUS;
 
 export const METODO_ENTREGA = {
-  RECOLECCION: "RECOLECCION",
+  RETIRO_FULL: "RETIRO_FULL", // lo que Mercado Pago manda al almacén Álamos
+  COLECTA: "COLECTA", // lo que Mercado Pago recolecta del almacén Álamos
   ENVIO: "ENVIO",
 } as const;
 
@@ -44,8 +45,10 @@ export const STATUS_BADGE: Record<ColectaStatus, string> = {
 };
 
 export const METODO_LABELS: Record<string, string> = {
-  RECOLECCION: "Recolección",
+  RETIRO_FULL: "Retiro Full",
+  COLECTA: "Colecta",
   ENVIO: "Envío",
+  RECOLECCION: "Retiro Full", // alias legacy: el valor antiguo se renombró a Retiro Full
 };
 
 export function nextFolio(count: number): string {

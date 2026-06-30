@@ -82,11 +82,12 @@ export async function createColecta(input: CreateColectaInput) {
   }
 }
 
-export async function getColectas() {
+export async function getColectas(tipos?: string[]) {
   const ctx = await getSessionCtx();
   if (!ctx) return { success: false as const, error: "No autorizado" };
 
-  const where = ctx.userRole === "ADMIN_GI" ? {} : { organizationId: ctx.userOrgId };
+  const where: any = ctx.userRole === "ADMIN_GI" ? {} : { organizationId: ctx.userOrgId };
+  if (tipos && tipos.length) where.metodoEntrega = { in: tipos };
 
   const colectas = await prisma.colecta.findMany({
     where,

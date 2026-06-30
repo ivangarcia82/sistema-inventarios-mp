@@ -13,12 +13,14 @@ type Line = { productId: string; name: string; unit: string; qty: number };
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all";
 const labelCls = "block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5";
 
-export function ColectaForm({ products, warehouses }: { products: Product[]; warehouses: Warehouse[] }) {
+export function ColectaForm({ products, warehouses, defaultTipo }: { products: Product[]; warehouses: Warehouse[]; defaultTipo?: string }) {
   const router = useRouter();
   const [ordenCompra, setOrdenCompra] = useState("");
   const [numeroColecta, setNumeroColecta] = useState("");
   const [numeroSolicitud, setNumeroSolicitud] = useState("");
-  const [metodoEntrega, setMetodoEntrega] = useState("RETIRO_FULL");
+  const [metodoEntrega, setMetodoEntrega] = useState(
+    defaultTipo && ["RETIRO_FULL", "COLECTA", "ENVIO"].includes(defaultTipo) ? defaultTipo : "RETIRO_FULL"
+  );
   const [clienteNombre, setClienteNombre] = useState("");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [lines, setLines] = useState<Line[]>([]);

@@ -6,7 +6,7 @@ import { getAllProducts, createProduct, deleteProduct, updateProduct } from "@/a
 import { getOrganizations } from "@/app/actions/warehouses";
 import { Trash2, Plus, Inbox } from "lucide-react";
 
-type Product = { id: string; name: string; sku: string | null; unit: string; description: string | null; price: number | null; cost: number | null; organization: { name: string } };
+type Product = { id: string; name: string; sku: string | null; unit: string; description: string | null; price: number | null; cost: number | null; piecesPerUnit: number; organization: { name: string } };
 type Org = { id: string; name: string };
 
 const currency = (n: number | null | undefined) =>
@@ -76,10 +76,53 @@ function MoneyCell({
   );
 }
 
+// Celda de entero editable en línea (para "piezas por unidad").
+function IntCell({ value, onSave }: { value: number; onSave: (v: number) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => { if (!editing) setDraft(String(value)); }, [value, editing]);
+
+  const commit = async () => {
+    setEditing(false);
+    const next = Math.trunc(Number(draft.trim()));
+    if (!Number.isFinite(next) || next < 1) { setDraft(String(value)); return; }
+    if (next === value) return;
+    await onSave(next);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        min="1"
+        step="1"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") { setDraft(String(value)); setEditing(false); }
+        }}
+        className="w-14 px-2 py-1 border border-primary/60 rounded-md text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+      />
+    );
+  }
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      title="Piezas por unidad — clic para editar"
+      className={`px-1.5 py-0.5 rounded-md hover:bg-slate-100 tabular-nums transition-colors cursor-pointer ${value > 1 ? "text-slate-700 font-medium" : "text-slate-300"}`}
+    >
+      {value}
+    </button>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orgs, setOrgs] = useState<Org[]>([]);
-  const [form, setForm] = useState({ name: "", sku: "", unit: "pza", description: "", price: "", cost: "", organizationId: "" });
+  const [form, setForm] = useState({ name: "", sku: "", unit: "pza", description: "", price: "", cost: "", piecesPerUnit: "1", organizationId: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -106,6 +149,7 @@ export default function ProductsPage() {
     if (priceNum === "invalid") { setError("El precio debe ser un número válido (≥ 0)"); return; }
     if (costNum === "invalid") { setError("El costo debe ser un número válido (≥ 0)"); return; }
     setLoading(true);
+    const ppu = Math.max(1, Math.trunc(Number(form.piecesPerUnit) || 1));
     const res = await createProduct({
       name: form.name,
       sku: form.sku || undefined,
@@ -113,17 +157,22 @@ export default function ProductsPage() {
       description: form.description || undefined,
       price: priceNum,
       cost: costNum,
+      piecesPerUnit: ppu,
       organizationId: form.organizationId,
     });
     if (!res.success) setError(res.error ?? "Error");
-    else { setForm((f) => ({ ...f, name: "", sku: "", description: "", price: "", cost: "" })); await load(); }
+    else { setForm((f) => ({ ...f, name: "", sku: "", description: "", price: "", cost: "", piecesPerUnit: "1" })); await load(); }
     setLoading(false);
   };
 
-  const handleUpdateField = async (id: string, field: "cost" | "price", value: number | null) => {
+  const handleUpdateField = async (
+    id: string,
+    field: "cost" | "price" | "piecesPerUnit",
+    value: number | null
+  ) => {
     // Optimista: actualiza local y persiste.
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
-    const res = await updateProduct(id, { [field]: value });
+    const res = await updateProduct(id, { [field]: value ?? undefined } as any);
     if (!res.success) { alert(res.error); await load(); }
   };
 
@@ -175,6 +224,18 @@ export default function ProductsPage() {
                 <option key={u}>{u}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={labelCls}>Pzas por unidad</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={form.piecesPerUnit}
+              onChange={(e) => setForm({ ...form, piecesPerUnit: e.target.value })}
+              className={inputCls}
+              placeholder="Ej. 5 (un kit = 5 pzas)"
+            />
           </div>
           <div>
             <label className={labelCls}>Costo (MXN)</label>
@@ -249,6 +310,7 @@ export default function ProductsPage() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Nombre</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">SKU</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Unidad</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Pzas/u</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Costo</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Organización</th>
@@ -266,6 +328,9 @@ export default function ProductsPage() {
                   <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs font-medium">
                     {p.unit}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <IntCell value={p.piecesPerUnit} onSave={(v) => handleUpdateField(p.id, "piecesPerUnit", v)} />
                 </td>
                 <td className="px-4 py-3 text-right">
                   <MoneyCell value={p.cost} onSave={(v) => handleUpdateField(p.id, "cost", v)} />
@@ -286,7 +351,7 @@ export default function ProductsPage() {
             ))}
             {products.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
+                <td colSpan={8} className="px-4 py-12 text-center">
                   <Inbox className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                   <p className="text-sm text-slate-400">Sin productos registrados</p>
                 </td>

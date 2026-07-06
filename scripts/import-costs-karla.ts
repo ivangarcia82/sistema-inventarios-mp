@@ -1,18 +1,21 @@
 // scripts/import-costs-karla.ts
-// Carga el COSTO por producto (Product.cost) para la org Mercado Pago.
-// Lee scripts/costs-karla.data.json (que se genera del Excel de costos de la clienta):
-//   [ { "sku": "1478754818", "name": "Kit Para Representantes...", "cost": 82.50 }, ... ]
-// - "cost": null  -> producto sin costo (los 2 que la clienta sigue validando).
-// - Match: primero por SKU (exacto), si no por nombre (exacto), si no por nombre (contiene).
+// Carga el COSTO por producto (Product.cost) para la org Mercado Pago, a partir del
+// Excel de costos de la clienta (que trae costos por COMPONENTE).
 //
-// Fija el costo de forma ABSOLUTA -> idempotente (re-correr da el mismo resultado).
+// Reglas acordadas (2026-07):
+//   - Kit Para Representantes ...  -> $724   (mochila 335 + gorra 69.5 + playera 249.5 + 2×lanyard 35)
+//   - Playera Dry-fit Representante Mercado Pago | (todas las tallas) -> $249.50
+//   - Rompevientos Representantes Mercado Pago | (L, S, XL)           -> $416
+//   - Pack De 4 Cordones Representante  -> $140   (4 × lanyard 35)
+//   - Pack De Manuales Cliente Representantes        -> sin costo (pendiente)
+//   - Kit Señalización Profesional Para Tienda Autorizada Amarillo    -> sin costo (pendiente)
+//
+// Fija el costo de forma ABSOLUTA -> idempotente.
 //
 // Uso:
 //   DATABASE_URL="<url>" npx tsx scripts/import-costs-karla.ts            # dry-run
 //   DATABASE_URL="<url>" npx tsx scripts/import-costs-karla.ts --apply    # escribe
 import "dotenv/config";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
@@ -20,23 +23,25 @@ import { PrismaClient } from "@prisma/client";
 const APPLY = process.argv.includes("--apply");
 const ORG_SLUG = process.env.MP_ORG_SLUG ?? "mercado-pago";
 
-type CostRow = { sku?: string | null; name?: string | null; cost: number | null };
+// Costos por componente (del Excel), por si se quiere auditar el cálculo del kit.
+const C = { mochila: 335, gorra: 69.5, playera: 249.5, lanyard: 35, rompevientos: 416 };
+const KIT_COST = C.mochila + C.gorra + C.playera + 2 * C.lanyard; // 724
 
-const dataPath = join(__dirname, "costs-karla.data.json");
-let data: CostRow[];
-try {
-  data = JSON.parse(readFileSync(dataPath, "utf-8"));
-} catch {
-  console.error(`❌ Falta ${dataPath}. Genera ese JSON a partir del Excel de costos antes de correr este script.`);
-  process.exit(1);
-}
+// Reglas: primera que haga match (por subcadena, case-insensitive) gana.
+// cost = null  => se marca explícitamente SIN costo (pendiente).
+const RULES: { match: string; cost: number | null; label: string }[] = [
+  { match: "kit señaliz",              cost: null,             label: "Kit Señalización (pendiente)" },
+  { match: "pack de manuales",         cost: null,             label: "Pack De Manuales (pendiente)" },
+  { match: "kit para representantes",  cost: KIT_COST,         label: `Kit Representantes = $${KIT_COST}` },
+  { match: "playera dry-fit",          cost: C.playera,        label: `Playera Dry-fit = $${C.playera}` },
+  { match: "rompevientos",             cost: C.rompevientos,   label: `Rompevientos = $${C.rompevientos}` },
+  { match: "pack de 4 cordones",       cost: 4 * C.lanyard,    label: `Pack 4 Cordones = $${4 * C.lanyard}` },
+];
 
 const url = process.env.DATABASE_URL ?? "";
 const isLocal = /localhost|127\.0\.0\.1/.test(url);
 const pool = new Pool({ connectionString: url, ssl: isLocal ? false : { rejectUnauthorized: false } });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) } as any);
-
-const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
 async function main() {
   console.log(APPLY ? "✍️  APLICANDO (escribe en la base)\n" : "🔍 DRY-RUN (no escribe). Usa --apply para escribir.\n");
@@ -45,51 +50,31 @@ async function main() {
   if (!org) throw new Error(`No existe la organización slug="${ORG_SLUG}".`);
   console.log("Organización:", org.name, `(${org.id})\n`);
 
-  const products = await prisma.product.findMany({ where: { organizationId: org.id } });
-  const bySku = new Map<string, typeof products>();
-  const byName = new Map<string, typeof products>();
+  const products = await prisma.product.findMany({
+    where: { organizationId: org.id },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  let set = 0, pending = 0, noRule = 0;
   for (const p of products) {
-    if (p.sku) { const k = p.sku.trim(); (bySku.get(k) ?? bySku.set(k, []).get(k)!).push(p); }
-    const nk = norm(p.name); (byName.get(nk) ?? byName.set(nk, []).get(nk)!).push(p);
-  }
-
-  const matchedIds = new Set<string>();
-  let set = 0, nullCost = 0, notFound = 0, ambiguous = 0;
-
-  for (const row of data) {
-    let candidates: typeof products = [];
-    let how = "";
-    if (row.sku && bySku.has(row.sku.trim())) { candidates = bySku.get(row.sku.trim())!; how = "sku"; }
-    else if (row.name && byName.has(norm(row.name))) { candidates = byName.get(norm(row.name))!; how = "nombre"; }
-    else if (row.name) {
-      const nk = norm(row.name);
-      candidates = products.filter((p) => norm(p.name).includes(nk) || nk.includes(norm(p.name)));
-      how = "nombre~";
+    const n = p.name.toLowerCase();
+    const rule = RULES.find((r) => n.includes(r.match));
+    if (!rule) { noRule++; console.log(`   ✗ SIN REGLA: ${p.name}`); continue; }
+    if (rule.cost == null) {
+      pending++;
+      console.log(`   ○ ${p.name.slice(0, 48)} -> pendiente (${rule.label})`);
+      if (APPLY) await prisma.product.update({ where: { id: p.id }, data: { cost: null } });
+      continue;
     }
-
-    const label = row.sku ?? row.name ?? "(sin id)";
-    if (candidates.length === 0) { notFound++; console.log(`   ✗ NO ENCONTRADO: ${label}`); continue; }
-    if (candidates.length > 1) { ambiguous++; console.log(`   ? AMBIGUO (${candidates.length}) por ${how}: ${label} -> ${candidates.map((c) => c.name.slice(0, 30)).join(" | ")}`); continue; }
-
-    const p = candidates[0];
-    matchedIds.add(p.id);
-    if (row.cost == null) { nullCost++; console.log(`   ○ sin costo (pendiente): ${p.name.slice(0, 50)}`); if (APPLY) await prisma.product.update({ where: { id: p.id }, data: { cost: null } }); continue; }
-    console.log(`   → ${p.name.slice(0, 50)} [${how}]: costo = ${row.cost}`);
     set++;
-    if (APPLY) await prisma.product.update({ where: { id: p.id }, data: { cost: row.cost } });
+    console.log(`   → ${p.name.slice(0, 48)} -> $${rule.cost}  [${rule.label}]`);
+    if (APPLY) await prisma.product.update({ where: { id: p.id }, data: { cost: rule.cost } });
   }
 
-  const withoutRow = products.filter((p) => !matchedIds.has(p.id));
-  console.log(`\nResumen: ${set} costos asignados | ${nullCost} marcados sin costo | ${notFound} no encontrados | ${ambiguous} ambiguos`);
-  if (withoutRow.length) {
-    console.log(`\n⚠️  ${withoutRow.length} productos de la org SIN fila en el Excel de costos:`);
-    withoutRow.forEach((p) => console.log(`     · ${p.name}${p.sku ? ` (${p.sku})` : ""}`));
-  }
+  console.log(`\nResumen: ${set} con costo | ${pending} pendientes (sin costo) | ${noRule} sin regla`);
+  if (noRule > 0) console.log("⚠️  Hay productos sin regla de costo — revisa la lista de arriba.");
   console.log(APPLY ? "\n✅ Costos aplicados." : "\n🔍 Dry-run terminado. Nada se escribió.");
-  await done();
-}
-
-async function done() {
   await prisma.$disconnect();
   await pool.end();
 }

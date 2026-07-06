@@ -8,7 +8,7 @@ import { AlertTriangle, Search, Inbox } from "lucide-react";
 type InventoryItem = {
   id: string;
   quantity: number;
-  product: { id: string; name: string; sku: string | null; unit: string; price: number | null; cost: number | null };
+  product: { id: string; name: string; sku: string | null; unit: string; price: number | null; cost: number | null; piecesPerUnit: number };
   warehouse: { id: string; name: string };
 };
 type Org = { id: string; name: string };
@@ -103,6 +103,11 @@ export function InventoryTable({ initialItems, orgs, userRole, defaultOrgId }: P
                       {item.quantity}{" "}
                       <span className="font-normal text-slate-400 text-xs">{item.product.unit}</span>
                     </span>
+                  )}
+                  {item.product.piecesPerUnit > 1 && (
+                    <div className="text-[11px] text-slate-400 tabular-nums mt-0.5">
+                      = {(item.quantity * item.product.piecesPerUnit).toLocaleString("es-MX")} pzas
+                    </div>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-slate-600">

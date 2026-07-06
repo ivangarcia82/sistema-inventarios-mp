@@ -57,6 +57,12 @@ export function Sidebar({ userName, userRole, orgName }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const isAdmin = userRole === "ADMIN_GI";
 
+  // Solo los admin GI pueden registrar movimientos manuales.
+  // Los usuarios de Mercado Pago (p. ej. Karla) no ven "Nuevo movimiento".
+  const visibleNavItems = navItems.filter(
+    (item) => item.href !== "/movements/new" || isAdmin
+  );
+
   const roleLabel = userRole === "ADMIN_GI" ? "Admin GI" : "Mercado Pago";
 
   return (
@@ -88,7 +94,7 @@ export function Sidebar({ userName, userRole, orgName }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto space-y-0.5 px-2">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (

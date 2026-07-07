@@ -137,14 +137,17 @@ model Colecta {
 }
 
 model ColectaItem {
-  id        String  @id @default(uuid())
-  colectaId String
-  colecta   Colecta @relation(fields: [colectaId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
+  id         String  @id @default(uuid())
+  colectaId  String
+  colecta    Colecta @relation(fields: [colectaId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  quantity   Int
+  kitGroupId String? // piezas del mismo kit comparten este id (null = pieza suelta)
+  kitLabel   String? // etiqueta del kit, p. ej. "Kit — Playera Hombre Grande"
 
   @@index([colectaId])
+  @@index([kitGroupId])
 }
 
 model ColectaAviso {

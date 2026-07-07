@@ -21,14 +21,20 @@ export default async function NewColectaPage({
   ]);
 
   const esRetiro = tipo === "RETIRO_FULL";
+  const products = productsRes.success ? (productsRes.data as any[]) : [];
+  // Playeras de kit (creadas por el desglose): "Playera <talla>" sin "Dry-fit".
+  const kitPlayeras = products.filter(
+    (p: any) => /^playera /i.test(p.name) && !/dry-fit/i.test(p.name)
+  );
 
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="text-xl font-semibold text-slate-900 mb-1">{esRetiro ? "Nuevo retiro Full" : "Nueva colecta"}</h1>
       <p className="text-sm text-slate-500 mb-6">Captura los datos y los productos a preparar.</p>
       <ColectaForm
-        products={productsRes.success ? (productsRes.data as any) : []}
+        products={products}
         warehouses={warehousesRes.success ? (warehousesRes.data as any) : []}
+        kitPlayeras={kitPlayeras}
         defaultTipo={tipo}
       />
     </div>

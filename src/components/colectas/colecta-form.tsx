@@ -9,11 +9,12 @@ import { Plus, Minus, X, Loader2 } from "lucide-react";
 type Product = { id: string; name: string; sku: string | null; unit: string };
 type Warehouse = { id: string; name: string; organization?: { name: string } };
 type Line = { productId: string; name: string; unit: string; qty: number };
+type KitLine = { playeraProductId: string; playeraName: string; qty: number };
 
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all";
 const labelCls = "block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5";
 
-export function ColectaForm({ products, warehouses, defaultTipo }: { products: Product[]; warehouses: Warehouse[]; defaultTipo?: string }) {
+export function ColectaForm({ products, warehouses, kitPlayeras = [], defaultTipo }: { products: Product[]; warehouses: Warehouse[]; kitPlayeras?: Product[]; defaultTipo?: string }) {
   const router = useRouter();
   const [ordenCompra, setOrdenCompra] = useState("");
   const [numeroColecta, setNumeroColecta] = useState("");
@@ -25,6 +26,8 @@ export function ColectaForm({ products, warehouses, defaultTipo }: { products: P
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [lines, setLines] = useState<Line[]>([]);
   const [picker, setPicker] = useState(products[0]?.id ?? "");
+  const [kits, setKits] = useState<KitLine[]>([]);
+  const [kitPicker, setKitPicker] = useState(kitPlayeras[0]?.id ?? "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,11 +43,23 @@ export function ColectaForm({ products, warehouses, defaultTipo }: { products: P
 
   const removeLine = (productId: string) => setLines(lines.filter((l) => l.productId !== productId));
 
+  const addKit = () => {
+    const p = kitPlayeras.find((x) => x.id === kitPicker);
+    if (!p) return;
+    if (kits.some((k) => k.playeraProductId === p.id)) return;
+    setKits([...kits, { playeraProductId: p.id, playeraName: p.name, qty: 1 }]);
+  };
+
+  const updateKitQty = (playeraProductId: string, delta: number) =>
+    setKits(kits.map((k) => (k.playeraProductId === playeraProductId ? { ...k, qty: Math.max(1, k.qty + delta) } : k)));
+
+  const removeKit = (playeraProductId: string) => setKits(kits.filter((k) => k.playeraProductId !== playeraProductId));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!warehouseId) { setError("Selecciona un almacén"); return; }
-    if (!lines.length) { setError("Agrega al menos un producto"); return; }
+    if (!lines.length && !kits.length) { setError("Agrega al menos un producto o kit"); return; }
     setLoading(true);
 
     const res = await createColecta({
@@ -55,6 +70,7 @@ export function ColectaForm({ products, warehouses, defaultTipo }: { products: P
       clienteNombre: clienteNombre || undefined,
       warehouseId,
       items: lines.map((l) => ({ productId: l.productId, quantity: l.qty })),
+      kits: kits.map((k) => ({ playeraProductId: k.playeraProductId, quantity: k.qty })),
     });
 
     if (!res.success) {
@@ -141,6 +157,50 @@ export function ColectaForm({ products, warehouses, defaultTipo }: { products: P
           </div>
         )}
       </div>
+
+      {kitPlayeras.length > 0 && (
+        <div>
+          <label className={labelCls}>Armar kit</label>
+          <p className="text-xs text-slate-400 -mt-1 mb-2">Cada kit = 1 mochila + 1 gorra + 2 lanyard + 1 playera (la que elijas).</p>
+          <div className="flex gap-2">
+            <select value={kitPicker} onChange={(e) => setKitPicker(e.target.value)} className={inputCls + " cursor-pointer"}>
+              {kitPlayeras.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <button type="button" onClick={addKit} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary/90 transition-colors cursor-pointer">
+              <Plus className="w-4 h-4" /> Agregar kit
+            </button>
+          </div>
+
+          {kits.length > 0 && (
+            <div className="mt-3 border border-slate-200 rounded-lg divide-y divide-slate-100">
+              {kits.map((k) => (
+                <div key={k.playeraProductId} className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-slate-700 truncate">Kit ×{k.qty} — {k.playeraName}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button type="button" onClick={() => updateKitQty(k.playeraProductId, -1)} className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer">
+                        <Minus className="w-3 h-3 text-slate-600" />
+                      </button>
+                      <span className="text-sm font-bold text-slate-800 w-6 text-center tabular-nums">{k.qty}</span>
+                      <button type="button" onClick={() => updateKitQty(k.playeraProductId, 1)} className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer">
+                        <Plus className="w-3 h-3 text-slate-600" />
+                      </button>
+                      <button type="button" onClick={() => removeKit(k.playeraProductId)} className="text-slate-300 hover:text-red-400 transition-colors cursor-pointer">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {k.qty} mochila · {k.qty} gorra · {k.qty * 2} lanyard · {k.qty} {k.playeraName}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">{error}</p>}
 

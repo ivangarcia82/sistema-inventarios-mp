@@ -1,16 +1,17 @@
 // src/app/(app)/pos/page.tsx
 import { auth } from "@/lib/auth";
-import { getAllWarehouses, getWarehouses } from "@/app/actions/warehouses";
+import { redirect } from "next/navigation";
+import { getAllWarehouses } from "@/app/actions/warehouses";
 import { PosTerminal } from "@/components/pos/pos-terminal";
 
 export default async function PosPage() {
   const session = await auth();
   const userRole = (session?.user as any)?.role as string;
-  const userOrgId = (session?.user as any)?.organizationId as string;
 
-  const warehousesRes = userRole === "ADMIN_GI"
-    ? await getAllWarehouses()
-    : await getWarehouses(userOrgId);
+  // Solo admin GI usa el POS. Los usuarios MP (p. ej. Karla) quedan fuera.
+  if (userRole !== "ADMIN_GI") redirect("/dashboard");
+
+  const warehousesRes = await getAllWarehouses();
 
   return (
     <div className="max-w-6xl mx-auto">

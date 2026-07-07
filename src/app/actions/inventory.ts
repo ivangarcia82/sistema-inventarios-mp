@@ -19,7 +19,7 @@ export async function getInventory(organizationId?: string) {
   const items = await prisma.inventoryItem.findMany({
     where: { product: { organizationId: targetOrgId } },
     include: {
-      product: { select: { id: true, name: true, sku: true, unit: true, price: true } },
+      product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true } },
       warehouse: { select: { id: true, name: true } },
     },
     orderBy: [{ product: { name: "asc" } }, { warehouse: { name: "asc" } }],
@@ -27,7 +27,11 @@ export async function getInventory(organizationId?: string) {
 
   const serialized = items.map((i) => ({
     ...i,
-    product: { ...i.product, price: i.product.price != null ? Number(i.product.price) : null },
+    product: {
+      ...i.product,
+      price: i.product.price != null ? Number(i.product.price) : null,
+      cost: i.product.cost != null ? Number(i.product.cost) : null,
+    },
   }));
 
   return { success: true as const, data: serialized };
@@ -89,14 +93,18 @@ export async function getWarehouseInventory(warehouseId: string) {
   const items = await prisma.inventoryItem.findMany({
     where: { warehouseId, quantity: { gt: 0 } },
     include: {
-      product: { select: { id: true, name: true, sku: true, unit: true, price: true } },
+      product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true } },
     },
     orderBy: { product: { name: "asc" } },
   });
 
   const serialized = items.map((i) => ({
     ...i,
-    product: { ...i.product, price: i.product.price != null ? Number(i.product.price) : null },
+    product: {
+      ...i.product,
+      price: i.product.price != null ? Number(i.product.price) : null,
+      cost: i.product.cost != null ? Number(i.product.cost) : null,
+    },
   }));
 
   return { success: true as const, data: serialized };

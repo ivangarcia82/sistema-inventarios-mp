@@ -2,11 +2,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllProducts, createProduct, deleteProduct } from "@/app/actions/products";
+import { getAllProducts, createProduct, deleteProduct, updateProduct } from "@/app/actions/products";
 import { getOrganizations } from "@/app/actions/warehouses";
 import { Trash2, Plus, Inbox } from "lucide-react";
 
-type Product = { id: string; name: string; sku: string | null; unit: string; description: string | null; price: number | null; organization: { name: string } };
+type Product = { id: string; name: string; sku: string | null; unit: string; description: string | null; price: number | null; cost: number | null; organization: { name: string } };
 type Org = { id: string; name: string };
 
 const currency = (n: number | null | undefined) =>
@@ -15,10 +15,71 @@ const currency = (n: number | null | undefined) =>
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white";
 const labelCls = "block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5";
 
+// Celda de dinero editable en línea (guarda al perder foco / Enter si cambió).
+function MoneyCell({
+  value,
+  onSave,
+}: {
+  value: number | null;
+  onSave: (v: number | null) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value == null ? "" : String(value));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setDraft(value == null ? "" : String(value));
+  }, [value, editing]);
+
+  const commit = async () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    const next = trimmed === "" ? null : Number(trimmed);
+    if (next != null && (Number.isNaN(next) || next < 0)) {
+      setDraft(value == null ? "" : String(value)); // revertir inválido
+      return;
+    }
+    if (next === value) return; // sin cambios
+    setSaving(true);
+    await onSave(next);
+    setSaving(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        min="0"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") { setDraft(value == null ? "" : String(value)); setEditing(false); }
+        }}
+        className="w-24 px-2 py-1 border border-primary/60 rounded-md text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      title="Clic para editar"
+      className={`px-1.5 py-0.5 rounded-md hover:bg-slate-100 tabular-nums transition-colors cursor-pointer ${saving ? "opacity-50" : ""} ${value != null ? "text-slate-700 font-medium" : "text-slate-300"}`}
+    >
+      {value != null ? currency(value) : "—"}
+    </button>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orgs, setOrgs] = useState<Org[]>([]);
-  const [form, setForm] = useState({ name: "", sku: "", unit: "pza", description: "", price: "", organizationId: "" });
+  const [form, setForm] = useState({ name: "", sku: "", unit: "pza", description: "", price: "", cost: "", organizationId: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,27 +91,40 @@ export default function ProductsPage() {
 
   useEffect(() => { load(); }, []);
 
+  const parseMoney = (s: string): number | null | "invalid" => {
+    const t = s.trim();
+    if (t === "") return null;
+    const n = Number(t);
+    return Number.isNaN(n) || n < 0 ? "invalid" : n;
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const priceNum = parseMoney(form.price);
+    const costNum = parseMoney(form.cost);
+    if (priceNum === "invalid") { setError("El precio debe ser un número válido (≥ 0)"); return; }
+    if (costNum === "invalid") { setError("El costo debe ser un número válido (≥ 0)"); return; }
     setLoading(true);
-    const priceNum = form.price.trim() === "" ? null : Number(form.price);
-    if (priceNum != null && (Number.isNaN(priceNum) || priceNum < 0)) {
-      setError("El precio debe ser un número válido (≥ 0)");
-      setLoading(false);
-      return;
-    }
     const res = await createProduct({
       name: form.name,
       sku: form.sku || undefined,
       unit: form.unit,
       description: form.description || undefined,
       price: priceNum,
+      cost: costNum,
       organizationId: form.organizationId,
     });
     if (!res.success) setError(res.error ?? "Error");
-    else { setForm((f) => ({ ...f, name: "", sku: "", description: "", price: "" })); await load(); }
+    else { setForm((f) => ({ ...f, name: "", sku: "", description: "", price: "", cost: "" })); await load(); }
     setLoading(false);
+  };
+
+  const handleUpdateField = async (id: string, field: "cost" | "price", value: number | null) => {
+    // Optimista: actualiza local y persiste.
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+    const res = await updateProduct(id, { [field]: value });
+    if (!res.success) { alert(res.error); await load(); }
   };
 
   const handleDelete = async (id: string) => {
@@ -61,7 +135,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Productos</h1>
         <p className="text-sm text-slate-500 mt-0.5">Catálogo de productos promocionales</p>
@@ -101,6 +175,19 @@ export default function ProductsPage() {
                 <option key={u}>{u}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={labelCls}>Costo (MXN)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={form.cost}
+              onChange={(e) => setForm({ ...form, cost: e.target.value })}
+              className={inputCls}
+              placeholder="Ej. 80.00"
+            />
           </div>
           <div>
             <label className={labelCls}>Precio (MXN)</label>
@@ -162,6 +249,7 @@ export default function ProductsPage() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Nombre</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">SKU</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Unidad</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Costo</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Organización</th>
               <th className="px-4 py-3" />
@@ -179,10 +267,11 @@ export default function ProductsPage() {
                     {p.unit}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {p.price != null
-                    ? <span className="font-medium text-slate-700">{currency(p.price)}</span>
-                    : <span className="text-slate-300">—</span>}
+                <td className="px-4 py-3 text-right">
+                  <MoneyCell value={p.cost} onSave={(v) => handleUpdateField(p.id, "cost", v)} />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <MoneyCell value={p.price} onSave={(v) => handleUpdateField(p.id, "price", v)} />
                 </td>
                 <td className="px-4 py-3 text-slate-500">{p.organization.name}</td>
                 <td className="px-4 py-3 text-right">
@@ -197,7 +286,7 @@ export default function ProductsPage() {
             ))}
             {products.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center">
+                <td colSpan={7} className="px-4 py-12 text-center">
                   <Inbox className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                   <p className="text-sm text-slate-400">Sin productos registrados</p>
                 </td>

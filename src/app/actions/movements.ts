@@ -23,16 +23,15 @@ export async function createMovement(input: CreateMovementInput) {
   if (!session?.user) return { success: false as const, error: "No autorizado" };
 
   const userId = (session.user as any).id as string;
-  const userOrgId = (session.user as any).organizationId as string;
   const userRole = (session.user as any).role as string;
+
+  // Solo admin GI registra movimientos manuales. Los usuarios MP (p. ej. Karla) no.
+  if (userRole !== "ADMIN_GI") return { success: false as const, error: "No autorizado" };
 
   if (input.quantity <= 0) return { success: false as const, error: "La cantidad debe ser mayor a 0" };
 
   const product = await prisma.product.findUnique({ where: { id: input.productId } });
   if (!product) return { success: false as const, error: "Producto no encontrado" };
-  if (userRole !== "ADMIN_GI" && product.organizationId !== userOrgId) {
-    return { success: false as const, error: "No autorizado para mover este producto" };
-  }
 
   try {
     const movement = await prisma.$transaction(async (tx) => {
@@ -154,6 +153,10 @@ export async function createBatchMovements(items: BatchMovementItem[], receiverN
   if (!session?.user) return { success: false as const, error: "No autorizado" };
 
   const userId = (session.user as any).id as string;
+  const userRole = (session.user as any).role as string;
+
+  // Solo admin GI opera el POS. Los usuarios MP (p. ej. Karla) no.
+  if (userRole !== "ADMIN_GI") return { success: false as const, error: "No autorizado" };
 
   if (!items.length) return { success: false as const, error: "El carrito está vacío" };
 

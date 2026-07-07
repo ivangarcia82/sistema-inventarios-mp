@@ -57,6 +57,13 @@ export function Sidebar({ userName, userRole, orgName }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const isAdmin = userRole === "ADMIN_GI";
 
+  // Solo los admin GI pueden registrar movimientos/salidas.
+  // Los usuarios de Mercado Pago (p. ej. Karla) no ven "Nuevo movimiento" ni el "POS — Salidas".
+  const mpHidden = ["/movements/new", "/pos"];
+  const visibleNavItems = navItems.filter(
+    (item) => isAdmin || !mpHidden.includes(item.href)
+  );
+
   const roleLabel = userRole === "ADMIN_GI" ? "Admin GI" : "Mercado Pago";
 
   return (
@@ -88,7 +95,7 @@ export function Sidebar({ userName, userRole, orgName }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto space-y-0.5 px-2">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (

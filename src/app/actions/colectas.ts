@@ -1,6 +1,7 @@
 // src/app/actions/colectas.ts
 "use server";
 
+import { randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -11,6 +12,7 @@ import {
   buildAvisoMessage,
   type ColectaAction,
 } from "@/lib/colectas-logic";
+import { buildKitItems, KIT_COMPONENT_NAMES } from "@/lib/kits-logic";
 
 export interface CreateColectaInput {
   ordenCompra?: string;
@@ -20,6 +22,7 @@ export interface CreateColectaInput {
   clienteNombre?: string;
   warehouseId: string;
   items: { productId: string; quantity: number }[];
+  kits?: { playeraProductId: string; quantity: number }[];
 }
 
 async function getSessionCtx() {
@@ -36,8 +39,9 @@ export async function createColecta(input: CreateColectaInput) {
   const ctx = await getSessionCtx();
   if (!ctx) return { success: false as const, error: "No autorizado" };
 
+  const kits = (input.kits ?? []).filter((k) => k.quantity > 0);
   if (!input.warehouseId) return { success: false as const, error: "Selecciona un almacén" };
-  if (!input.items.length) return { success: false as const, error: "Agrega al menos un producto" };
+  if (!input.items.length && !kits.length) return { success: false as const, error: "Agrega al menos un producto o kit" };
   if (input.items.some((i) => i.quantity <= 0)) {
     return { success: false as const, error: "Las cantidades deben ser mayores a 0" };
   }
@@ -49,6 +53,47 @@ export async function createColecta(input: CreateColectaInput) {
     return { success: false as const, error: "No autorizado para este almacén" };
   }
   const organizationId = warehouse.organizationId;
+
+  // Líneas normales (piezas sueltas).
+  type ItemRow = { productId: string; quantity: number; kitGroupId: string | null; kitLabel: string | null };
+  const itemRows: ItemRow[] = input.items.map((i) => ({
+    productId: i.productId,
+    quantity: i.quantity,
+    kitGroupId: null,
+    kitLabel: null,
+  }));
+
+  // Expandir kits en piezas etiquetadas.
+  if (kits.length) {
+    const [mochila, gorra, lanyard] = await Promise.all([
+      prisma.product.findFirst({ where: { name: KIT_COMPONENT_NAMES.mochila, organizationId }, select: { id: true } }),
+      prisma.product.findFirst({ where: { name: KIT_COMPONENT_NAMES.gorra, organizationId }, select: { id: true } }),
+      prisma.product.findFirst({ where: { name: KIT_COMPONENT_NAMES.lanyard, organizationId }, select: { id: true } }),
+    ]);
+    const missing = [
+      !mochila && KIT_COMPONENT_NAMES.mochila,
+      !gorra && KIT_COMPONENT_NAMES.gorra,
+      !lanyard && KIT_COMPONENT_NAMES.lanyard,
+    ].filter(Boolean);
+    if (missing.length) return { success: false as const, error: `Falta(n) en el catálogo: ${missing.join(", ")}` };
+
+    for (const k of kits) {
+      const playera = await prisma.product.findFirst({
+        where: { id: k.playeraProductId, organizationId },
+        select: { id: true, name: true },
+      });
+      if (!playera) return { success: false as const, error: "Playera de kit no válida" };
+      const rows = buildKitItems({
+        kitGroupId: randomUUID(),
+        quantity: k.quantity,
+        playera,
+        mochilaId: mochila!.id,
+        gorraId: gorra!.id,
+        lanyardId: lanyard!.id,
+      });
+      itemRows.push(...rows);
+    }
+  }
 
   try {
     const colecta = await prisma.$transaction(async (tx) => {
@@ -67,9 +112,7 @@ export async function createColecta(input: CreateColectaInput) {
           organizationId,
           warehouseId: input.warehouseId,
           createdById: ctx.userId,
-          items: {
-            create: input.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          },
+          items: { create: itemRows },
         },
       });
     });

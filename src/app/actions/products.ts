@@ -11,9 +11,13 @@ async function requireAdmin() {
   return session!;
 }
 
-function serializeProduct<T extends { price?: any } | null | undefined>(p: T): T {
+function serializeProduct<T extends { price?: any; cost?: any } | null | undefined>(p: T): T {
   if (!p) return p;
-  return { ...p, price: p.price != null ? Number(p.price) : null } as T;
+  return {
+    ...p,
+    price: p.price != null ? Number(p.price) : null,
+    cost: p.cost != null ? Number(p.cost) : null,
+  } as T;
 }
 
 export async function getProducts(organizationId?: string) {
@@ -51,6 +55,7 @@ export async function createProduct(data: {
   unit: string;
   description?: string;
   price?: number | null;
+  cost?: number | null;
   organizationId: string;
 }) {
   await requireAdmin();
@@ -62,6 +67,7 @@ export async function createProduct(data: {
         unit: data.unit,
         description: data.description,
         price: data.price != null ? data.price : null,
+        cost: data.cost != null ? data.cost : null,
         organizationId: data.organizationId,
       },
     });
@@ -72,6 +78,33 @@ export async function createProduct(data: {
   } catch (e: any) {
     if (e.code === "P2002") return { success: false as const, error: "Ya existe un producto con ese SKU en la organización" };
     return { success: false as const, error: "Error al crear producto" };
+  }
+}
+
+export async function updateProduct(
+  id: string,
+  data: Partial<{
+    name: string;
+    sku: string | null;
+    unit: string;
+    description: string | null;
+    price: number | null;
+    cost: number | null;
+  }>
+) {
+  await requireAdmin();
+  try {
+    const product = await prisma.product.update({
+      where: { id },
+      data,
+    });
+    revalidatePath("/admin/products");
+    revalidatePath("/inventory");
+    revalidatePath("/dashboard");
+    return { success: true as const, data: serializeProduct(product) };
+  } catch (e: any) {
+    if (e.code === "P2002") return { success: false as const, error: "Ya existe un producto con ese SKU en la organización" };
+    return { success: false as const, error: "Error al actualizar producto" };
   }
 }
 

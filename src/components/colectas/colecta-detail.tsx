@@ -7,10 +7,11 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { transitionColecta } from "@/app/actions/colectas";
 import { STATUS_LABELS, STATUS_BADGE, METODO_LABELS, nextActionFor, canCancel, type ColectaStatus, type ColectaAction } from "@/lib/colectas-logic";
+import { groupColectaItems } from "@/lib/kits-logic";
 import { Countdown } from "@/components/colectas/countdown";
-import { Loader2, Copy, Check, PackageCheck, Bell } from "lucide-react";
+import { Loader2, Copy, Check, PackageCheck, Bell, Package } from "lucide-react";
 
-type Item = { id: string; quantity: number; product: { name: string; sku: string | null; unit: string } };
+type Item = { id: string; quantity: number; kitGroupId?: string | null; kitLabel?: string | null; product: { name: string; sku: string | null; unit: string } };
 type Aviso = { id: string; tipo: string; mensaje: string; createdAt: string | Date; createdBy: { name: string } };
 type Colecta = {
   id: string;
@@ -134,17 +135,34 @@ export function ColectaDetail({ colecta }: { colecta: Colecta }) {
         </div>
         <table className="w-full text-sm">
           <tbody className="divide-y divide-slate-100">
-            {colecta.items.map((it) => (
-              <tr key={it.id}>
-                <td className="px-5 py-2.5">
-                  <p className="text-slate-800">{it.product.name}</p>
-                  {it.product.sku && <p className="text-xs text-slate-400 font-mono">{it.product.sku}</p>}
-                </td>
-                <td className="px-5 py-2.5 text-right font-semibold text-slate-800 tabular-nums">
-                  {it.quantity} <span className="font-normal text-slate-400">{it.product.unit}</span>
-                </td>
-              </tr>
-            ))}
+            {groupColectaItems(colecta.items).map((row) =>
+              row.kind === "kit" ? (
+                <tr key={row.key}>
+                  <td className="px-5 py-2.5">
+                    <p className="flex items-center gap-1.5 text-slate-800 font-medium">
+                      <Package className="w-3.5 h-3.5 text-primary" />
+                      {row.label}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {row.pieces.map((p) => `${p.quantity} ${p.product.name}`).join(" · ")}
+                    </p>
+                  </td>
+                  <td className="px-5 py-2.5 text-right font-semibold text-slate-800 tabular-nums">
+                    {row.kitQty} <span className="font-normal text-slate-400">kit</span>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={row.key}>
+                  <td className="px-5 py-2.5">
+                    <p className="text-slate-800">{row.item.product.name}</p>
+                    {row.item.product.sku && <p className="text-xs text-slate-400 font-mono">{row.item.product.sku}</p>}
+                  </td>
+                  <td className="px-5 py-2.5 text-right font-semibold text-slate-800 tabular-nums">
+                    {row.item.quantity} <span className="font-normal text-slate-400">{row.item.product.unit}</span>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>

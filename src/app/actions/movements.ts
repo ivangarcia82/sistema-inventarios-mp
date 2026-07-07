@@ -153,6 +153,10 @@ export async function createBatchMovements(items: BatchMovementItem[], receiverN
   if (!session?.user) return { success: false as const, error: "No autorizado" };
 
   const userId = (session.user as any).id as string;
+  const userRole = (session.user as any).role as string;
+
+  // Solo admin GI opera el POS. Los usuarios MP (p. ej. Karla) no.
+  if (userRole !== "ADMIN_GI") return { success: false as const, error: "No autorizado" };
 
   if (!items.length) return { success: false as const, error: "El carrito está vacío" };
 

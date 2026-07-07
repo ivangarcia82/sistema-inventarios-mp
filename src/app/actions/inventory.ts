@@ -19,7 +19,7 @@ export async function getInventory(organizationId?: string) {
   const items = await prisma.inventoryItem.findMany({
     where: { product: { organizationId: targetOrgId } },
     include: {
-      product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true, piecesPerUnit: true } },
+      product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true } },
       warehouse: { select: { id: true, name: true } },
     },
     orderBy: [{ product: { name: "asc" } }, { warehouse: { name: "asc" } }],
@@ -93,7 +93,7 @@ export async function getWarehouseInventory(warehouseId: string) {
   const items = await prisma.inventoryItem.findMany({
     where: { warehouseId, quantity: { gt: 0 } },
     include: {
-      product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true, piecesPerUnit: true } },
+      product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true } },
     },
     orderBy: { product: { name: "asc" } },
   });

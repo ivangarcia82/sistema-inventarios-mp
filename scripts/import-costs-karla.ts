@@ -33,9 +33,14 @@ const RULES: { match: string; cost: number | null; label: string }[] = [
   { match: "kit señaliz",              cost: null,             label: "Kit Señalización (pendiente)" },
   { match: "pack de manuales",         cost: null,             label: "Pack De Manuales (pendiente)" },
   { match: "kit para representantes",  cost: KIT_COST,         label: `Kit Representantes = $${KIT_COST}` },
-  { match: "playera dry-fit",          cost: C.playera,        label: `Playera Dry-fit = $${C.playera}` },
+  // playera (suelta "Dry-fit" o de kit "Playera Hombre Grande", etc.)
+  { match: "playera",                  cost: C.playera,        label: `Playera = $${C.playera}` },
   { match: "rompevientos",             cost: C.rompevientos,   label: `Rompevientos = $${C.rompevientos}` },
   { match: "pack de 4 cordones",       cost: 4 * C.lanyard,    label: `Pack 4 Cordones = $${4 * C.lanyard}` },
+  // piezas sueltas de kit desglosado
+  { match: "mochila",                  cost: C.mochila,        label: `Mochila = $${C.mochila}` },
+  { match: "gorra",                    cost: C.gorra,          label: `Gorra = $${C.gorra}` },
+  { match: "lanyard",                  cost: C.lanyard,        label: `Lanyard = $${C.lanyard}` },
 ];
 
 const url = process.env.DATABASE_URL ?? "";

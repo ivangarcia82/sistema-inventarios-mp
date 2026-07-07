@@ -56,7 +56,6 @@ export async function createProduct(data: {
   description?: string;
   price?: number | null;
   cost?: number | null;
-  piecesPerUnit?: number;
   organizationId: string;
 }) {
   await requireAdmin();
@@ -69,7 +68,6 @@ export async function createProduct(data: {
         description: data.description,
         price: data.price != null ? data.price : null,
         cost: data.cost != null ? data.cost : null,
-        piecesPerUnit: data.piecesPerUnit && data.piecesPerUnit > 0 ? data.piecesPerUnit : 1,
         organizationId: data.organizationId,
       },
     });
@@ -92,7 +90,6 @@ export async function updateProduct(
     description: string | null;
     price: number | null;
     cost: number | null;
-    piecesPerUnit: number;
   }>
 ) {
   await requireAdmin();

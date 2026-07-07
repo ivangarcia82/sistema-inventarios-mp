@@ -59,7 +59,6 @@ model Product {
   description    String?
   price          Decimal?     @db.Decimal(10, 2)
   cost           Decimal?     @db.Decimal(10, 2)
-  piecesPerUnit  Int          @default(1) // piezas que contiene 1 unidad (p. ej. un Kit = 5)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())

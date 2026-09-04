@@ -32,6 +32,7 @@ model Warehouse {
   movementsFrom  StockMovement[] @relation("FromWarehouse")
   movementsTo    StockMovement[] @relation("ToWarehouse")
   colectas       Colecta[]
+  assignedUsers  User[]          @relation("AssignedUsers")
 
   @@unique([name, organizationId])
 }
@@ -44,6 +45,11 @@ model User {
   role           String       @default("USER_MP") // "ADMIN_GI" | "USER_MP"
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+  // Almacén asignado: si está definido, el usuario SOLO ve ese almacén
+  // (inventario, productos, colectas y movimientos). null = ve toda su organización.
+  // Los ADMIN_GI ignoran este campo: siempre ven todo.
+  warehouseId    String?
+  warehouse      Warehouse?   @relation("AssignedUsers", fields: [warehouseId], references: [id])
   createdAt      DateTime     @default(now())
 
   movements     StockMovement[]

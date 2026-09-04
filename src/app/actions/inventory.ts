@@ -2,22 +2,20 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getScope, inventoryWhere, canAccessWarehouse } from "@/lib/scope";
 
 export async function getInventory(organizationId?: string) {
-  const session = await auth();
-  if (!session?.user) return { success: false as const, error: "No autorizado" };
+  const scope = await getScope();
+  if (!scope) return { success: false as const, error: "No autorizado" };
 
-  const userRole = (session.user as any).role;
-  const userOrgId = (session.user as any).organizationId;
-  const targetOrgId = organizationId ?? userOrgId;
+  const targetOrgId = organizationId ?? scope.userOrgId;
 
-  if (userRole !== "ADMIN_GI" && targetOrgId !== userOrgId) {
+  if (!scope.isAdmin && targetOrgId !== scope.userOrgId) {
     return { success: false as const, error: "No autorizado" };
   }
 
   const items = await prisma.inventoryItem.findMany({
-    where: { product: { organizationId: targetOrgId } },
+    where: inventoryWhere(scope, targetOrgId),
     include: {
       product: { select: { id: true, name: true, sku: true, unit: true, price: true, cost: true } },
       warehouse: { select: { id: true, name: true } },
@@ -38,22 +36,28 @@ export async function getInventory(organizationId?: string) {
 }
 
 export async function getInventorySummary(organizationId?: string) {
-  const session = await auth();
-  if (!session?.user) return { success: false as const, error: "No autorizado" };
-
-  const userRole = (session.user as any).role;
-  const userOrgId = (session.user as any).organizationId;
+  const scope = await getScope();
+  if (!scope) return { success: false as const, error: "No autorizado" };
 
   // ADMIN_GI sin orgId explícito → visión global de todas las orgs
-  const isGlobalAdmin = userRole === "ADMIN_GI" && !organizationId;
-  const targetOrgId = isGlobalAdmin ? undefined : (organizationId ?? userOrgId);
+  const isGlobalAdmin = scope.isAdmin && !organizationId;
+  const targetOrgId = isGlobalAdmin ? undefined : (organizationId ?? scope.userOrgId);
 
-  if (!isGlobalAdmin && userRole !== "ADMIN_GI" && targetOrgId !== userOrgId) {
+  if (!isGlobalAdmin && !scope.isAdmin && targetOrgId !== scope.userOrgId) {
     return { success: false as const, error: "No autorizado" };
   }
 
-  const orgFilter = targetOrgId ? { organizationId: targetOrgId } : {};
-  const productOrgFilter = targetOrgId ? { product: { organizationId: targetOrgId } } : {};
+  // Con almacén asignado, el resumen cuenta solo lo de ese almacén.
+  const orgFilter: any = scope.warehouseId
+    ? { organizationId: targetOrgId, inventoryItems: { some: { warehouseId: scope.warehouseId } } }
+    : targetOrgId
+      ? { organizationId: targetOrgId }
+      : {};
+  const productOrgFilter: any = scope.warehouseId
+    ? { warehouseId: scope.warehouseId }
+    : targetOrgId
+      ? { product: { organizationId: targetOrgId } }
+      : {};
 
   const [totalProducts, totalStock, lowStockCount, valueRows] = await Promise.all([
     prisma.product.count({ where: orgFilter }),
@@ -87,8 +91,11 @@ export async function getInventorySummary(organizationId?: string) {
 }
 
 export async function getWarehouseInventory(warehouseId: string) {
-  const session = await auth();
-  if (!session?.user) return { success: false as const, error: "No autorizado" };
+  const scope = await getScope();
+  if (!scope) return { success: false as const, error: "No autorizado" };
+  if (!canAccessWarehouse(scope, warehouseId)) {
+    return { success: false as const, error: "No autorizado" };
+  }
 
   const items = await prisma.inventoryItem.findMany({
     where: { warehouseId, quantity: { gt: 0 } },

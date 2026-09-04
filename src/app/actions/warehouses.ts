@@ -3,6 +3,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getScope } from "@/lib/scope";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -12,19 +13,21 @@ async function requireAdmin() {
 }
 
 export async function getWarehouses(organizationId?: string) {
-  const session = await auth();
-  if (!session?.user) return { success: false as const, error: "No autorizado" };
+  const scope = await getScope();
+  if (!scope) return { success: false as const, error: "No autorizado" };
 
-  const orgId = organizationId ?? (session.user as any).organizationId;
-  const userRole = (session.user as any).role;
+  const orgId = organizationId ?? scope.userOrgId;
 
   // USER_MP solo puede ver su propia org
-  if (userRole !== "ADMIN_GI" && orgId !== (session.user as any).organizationId) {
+  if (!scope.isAdmin && orgId !== scope.userOrgId) {
     return { success: false as const, error: "No autorizado" };
   }
 
   const warehouses = await prisma.warehouse.findMany({
-    where: { organizationId: orgId },
+    // Con almacén asignado, el usuario solo ve ese almacén.
+    where: scope.warehouseId
+      ? { id: scope.warehouseId }
+      : { organizationId: orgId },
     include: { organization: { select: { name: true } } },
     orderBy: { createdAt: "asc" },
   });

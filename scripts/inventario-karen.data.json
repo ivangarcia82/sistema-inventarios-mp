@@ -1,0 +1,165 @@
+{
+  "origen": "ultimoinventario.xlsx (hoja Hoja1)",
+  "organizationSlug": "mercado-pago",
+  "warehouse": "Almacén Karen Esquer",
+  "user": {
+    "name": "Karen Esquer",
+    "email": "karen.esquersalazar@mercadolibre.com.mx",
+    "password": "karen123",
+    "role": "USER_MP"
+  },
+  "items": [
+    {
+      "pv": "PV65475",
+      "nombre": "Sticker recarga aquí",
+      "nombreOriginal": "sticker recarga aquí",
+      "recibido": 9706,
+      "salidas": 675,
+      "disponible": 9031
+    },
+    {
+      "pv": "PV65475",
+      "nombre": "Sticker paga a meses",
+      "nombreOriginal": "sticker paga a meses",
+      "recibido": 9811,
+      "salidas": 375,
+      "disponible": 9436
+    },
+    {
+      "pv": "PV65475",
+      "nombre": "Sticker aceptamos tarjetas debico/credito",
+      "nombreOriginal": "sticker aceptamos tarjetas debico/credito",
+      "recibido": 1815,
+      "salidas": 1150,
+      "disponible": 665
+    },
+    {
+      "pv": "PV68874",
+      "nombre": "Sticker 6 meses",
+      "nombreOriginal": "sticker 6 meses",
+      "recibido": 10046,
+      "salidas": 0,
+      "disponible": 10046
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Playera N M/consultor Cab",
+      "nombreOriginal": "playera N M/consultor Cab",
+      "recibido": 8,
+      "salidas": 2,
+      "disponible": 6
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Playera N G/consultor Cab",
+      "nombreOriginal": "playera N G/consultor Cab",
+      "recibido": 30,
+      "salidas": 3,
+      "disponible": 27
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Mochilas",
+      "nombreOriginal": "mochilas",
+      "recibido": 1008,
+      "salidas": 527,
+      "disponible": 481
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Libreta negra",
+      "nombreOriginal": "libreta negra",
+      "recibido": 984,
+      "salidas": 505,
+      "disponible": 479
+    },
+    {
+      "pv": "PV68875",
+      "nombre": "Letrero paga aquí con tarjeta topper",
+      "nombreOriginal": "letrero paga aquí con tarjeta  topper",
+      "recibido": 10217,
+      "salidas": 5050,
+      "disponible": 5167
+    },
+    {
+      "pv": "PV71159",
+      "nombre": "Letrero cerrado /abierto",
+      "nombreOriginal": "letrero cerrado /abierto",
+      "recibido": 10541,
+      "salidas": 5100,
+      "disponible": 5441
+    },
+    {
+      "pv": "PV65475",
+      "nombre": "Letrero armable se aceptan tarjetas debito/credito",
+      "nombreOriginal": "letrero armable se aceptan tarjetas debito/credito",
+      "recibido": 1598,
+      "salidas": 1150,
+      "disponible": 448
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Lanyar consultor",
+      "nombreOriginal": "lanyar consultor",
+      "recibido": 633,
+      "salidas": 500,
+      "disponible": 133
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Gorras consultor",
+      "nombreOriginal": "gorras consultor",
+      "recibido": 976,
+      "salidas": 525,
+      "disponible": 451
+    },
+    {
+      "pv": "PV68875",
+      "nombre": "Folleto punto de venta (resguardar)",
+      "nombreOriginal": "folleto punto de venta  (resguardar)",
+      "recibido": 763,
+      "salidas": 0,
+      "disponible": 763
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Credencial QR",
+      "nombreOriginal": "credencial QR",
+      "recibido": 644,
+      "salidas": 500,
+      "disponible": 144
+    },
+    {
+      "pv": "PV71159",
+      "nombre": "Chupon plastico",
+      "nombreOriginal": "chupon plastico",
+      "recibido": 9600,
+      "salidas": 0,
+      "disponible": 9600
+    },
+    {
+      "pv": "PV71159",
+      "nombre": "Carrete cadena",
+      "nombreOriginal": "carrete cadena",
+      "recibido": 110,
+      "salidas": 0,
+      "disponible": 110
+    },
+    {
+      "pv": "PV68874",
+      "nombre": "Carpeta tipo comanda amarilla",
+      "nombreOriginal": "carpeta tipo comanda amarilla",
+      "recibido": 9699,
+      "salidas": 5052,
+      "disponible": 4647
+    },
+    {
+      "pv": "PV63074",
+      "nombre": "Boligrafos",
+      "nombreOriginal": "boligrafos",
+      "recibido": 981,
+      "salidas": 505,
+      "disponible": 476
+    }
+  ]
+}

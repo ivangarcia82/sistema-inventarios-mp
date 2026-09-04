@@ -3,7 +3,7 @@
 
 import { randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getScope } from "@/lib/scope";
 import { revalidatePath } from "next/cache";
 import {
   nextFolio,
@@ -26,12 +26,15 @@ export interface CreateColectaInput {
 }
 
 async function getSessionCtx() {
-  const session = await auth();
-  if (!session?.user) return null;
+  const scope = await getScope();
+  if (!scope) return null;
   return {
-    userId: (session.user as any).id as string,
-    userOrgId: (session.user as any).organizationId as string,
-    userRole: (session.user as any).role as string,
+    userId: scope.userId,
+    userOrgId: scope.userOrgId,
+    userRole: scope.userRole,
+    isAdmin: scope.isAdmin,
+    // Almacén asignado: si existe, el usuario solo ve/opera colectas de ese almacén.
+    scopedWarehouseId: scope.warehouseId,
   };
 }
 
@@ -49,7 +52,10 @@ export async function createColecta(input: CreateColectaInput) {
   // El almacén define la organización de la colecta.
   const warehouse = await prisma.warehouse.findUnique({ where: { id: input.warehouseId } });
   if (!warehouse) return { success: false as const, error: "Almacén no encontrado" };
-  if (ctx.userRole !== "ADMIN_GI" && warehouse.organizationId !== ctx.userOrgId) {
+  if (!ctx.isAdmin && warehouse.organizationId !== ctx.userOrgId) {
+    return { success: false as const, error: "No autorizado para este almacén" };
+  }
+  if (ctx.scopedWarehouseId && warehouse.id !== ctx.scopedWarehouseId) {
     return { success: false as const, error: "No autorizado para este almacén" };
   }
   const organizationId = warehouse.organizationId;
@@ -129,7 +135,8 @@ export async function getColectas(tipos?: string[]) {
   const ctx = await getSessionCtx();
   if (!ctx) return { success: false as const, error: "No autorizado" };
 
-  const where: any = ctx.userRole === "ADMIN_GI" ? {} : { organizationId: ctx.userOrgId };
+  const where: any = ctx.isAdmin ? {} : { organizationId: ctx.userOrgId };
+  if (ctx.scopedWarehouseId) where.warehouseId = ctx.scopedWarehouseId;
   if (tipos && tipos.length) where.metodoEntrega = { in: tipos };
 
   const colectas = await prisma.colecta.findMany({
@@ -167,7 +174,10 @@ export async function getColecta(id: string) {
   });
 
   if (!colecta) return { success: false as const, error: "Colecta no encontrada" };
-  if (ctx.userRole !== "ADMIN_GI" && colecta.organizationId !== ctx.userOrgId) {
+  if (!ctx.isAdmin && colecta.organizationId !== ctx.userOrgId) {
+    return { success: false as const, error: "No autorizado" };
+  }
+  if (ctx.scopedWarehouseId && colecta.warehouseId !== ctx.scopedWarehouseId) {
     return { success: false as const, error: "No autorizado" };
   }
 
@@ -187,7 +197,8 @@ export async function getOrdenesColectas() {
   const ctx = await getSessionCtx();
   if (!ctx) return { success: false as const, error: "No autorizado" };
 
-  const where = ctx.userRole === "ADMIN_GI" ? {} : { organizationId: ctx.userOrgId };
+  const where: any = ctx.isAdmin ? {} : { organizationId: ctx.userOrgId };
+  if (ctx.scopedWarehouseId) where.warehouseId = ctx.scopedWarehouseId;
 
   const rows = await prisma.colecta.findMany({
     where,
@@ -208,7 +219,10 @@ export async function transitionColecta(id: string, action: ColectaAction) {
     include: { items: true },
   });
   if (!colecta) return { success: false as const, error: "Colecta no encontrada" };
-  if (ctx.userRole !== "ADMIN_GI" && colecta.organizationId !== ctx.userOrgId) {
+  if (!ctx.isAdmin && colecta.organizationId !== ctx.userOrgId) {
+    return { success: false as const, error: "No autorizado" };
+  }
+  if (ctx.scopedWarehouseId && colecta.warehouseId !== ctx.scopedWarehouseId) {
     return { success: false as const, error: "No autorizado" };
   }
 

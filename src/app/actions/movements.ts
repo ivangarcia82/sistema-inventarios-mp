@@ -3,6 +3,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getScope } from "@/lib/scope";
 import { revalidatePath } from "next/cache";
 
 type MovementType = "ENTRY" | "EXIT" | "TRANSFER" | "RETURN";
@@ -98,31 +99,39 @@ export async function getMovements(filters?: {
   from?: Date;
   to?: Date;
 }) {
-  const session = await auth();
-  if (!session?.user) return { success: false as const, error: "No autorizado" };
+  const scope = await getScope();
+  if (!scope) return { success: false as const, error: "No autorizado" };
 
-  const userRole = (session.user as any).role as string;
-  const userOrgId = (session.user as any).organizationId as string;
-  const userId = (session.user as any).id as string;
+  const { isAdmin, userOrgId, userId } = scope;
 
   // USER_MP solo ve sus propios movimientos
-  const createdByFilter = userRole !== "ADMIN_GI" ? { createdById: userId } : {};
+  const createdByFilter = !isAdmin ? { createdById: userId } : {};
 
   // ADMIN_GI ve todos salvo que se filtre por org; USER_MP siempre ve su org
   const orgFilter: any =
-    userRole === "ADMIN_GI" && !filters?.organizationId
+    isAdmin && !filters?.organizationId
       ? {}
       : { product: { organizationId: filters?.organizationId ?? userOrgId } };
 
-  const warehouseFilter: any = filters?.warehouseId
-    ? { OR: [{ fromWarehouseId: filters.warehouseId }, { toWarehouseId: filters.warehouseId }] }
-    : {};
+  // Filtros de almacén: el que pide el usuario en la UI y, si está restringido,
+  // el de su almacén asignado. Van en AND para que se acumulen sin pisarse.
+  const warehouseAnd: any[] = [];
+  if (filters?.warehouseId) {
+    warehouseAnd.push({
+      OR: [{ fromWarehouseId: filters.warehouseId }, { toWarehouseId: filters.warehouseId }],
+    });
+  }
+  if (scope.warehouseId) {
+    warehouseAnd.push({
+      OR: [{ fromWarehouseId: scope.warehouseId }, { toWarehouseId: scope.warehouseId }],
+    });
+  }
 
   const movements = await prisma.stockMovement.findMany({
     where: {
       ...createdByFilter,
       ...orgFilter,
-      ...warehouseFilter,
+      ...(warehouseAnd.length ? { AND: warehouseAnd } : {}),
       ...(filters?.type ? { type: filters.type } : {}),
       ...(filters?.productId ? { productId: filters.productId } : {}),
       ...(filters?.from || filters?.to

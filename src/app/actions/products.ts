@@ -3,6 +3,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getScope, productWhere } from "@/lib/scope";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -21,18 +22,18 @@ function serializeProduct<T extends { price?: any; cost?: any } | null | undefin
 }
 
 export async function getProducts(organizationId?: string) {
-  const session = await auth();
-  if (!session?.user) return { success: false as const, error: "No autorizado" };
+  const scope = await getScope();
+  if (!scope) return { success: false as const, error: "No autorizado" };
 
-  const userRole = (session.user as any).role;
-  const orgId = organizationId ?? (session.user as any).organizationId;
+  const orgId = organizationId ?? scope.userOrgId;
 
-  if (userRole !== "ADMIN_GI" && orgId !== (session.user as any).organizationId) {
+  if (!scope.isAdmin && orgId !== scope.userOrgId) {
     return { success: false as const, error: "No autorizado" };
   }
 
   const products = await prisma.product.findMany({
-    where: { organizationId: orgId },
+    // Con almacén asignado, solo los productos con inventario en ese almacén.
+    where: productWhere(scope, orgId),
     include: { organization: { select: { name: true } } },
     orderBy: { name: "asc" },
   });
